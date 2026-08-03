@@ -1,0 +1,12 @@
+[2026-06-20 15:04:39] ============================================================
+[2026-06-20 15:04:39] Travel Planner AI - Starting Server
+[2026-06-20 15:04:39] ============================================================
+[2026-06-20 15:04:39] Importing application modules...
+[2026-06-20 15:04:40] SUCCESS: Modules imported
+[2026-06-20 15:04:40] Creating Flask application...
+[2026-06-20 15:04:45] SUCCESS: Application created
+[2026-06-20 15:04:45] 
+[2026-06-20 15:04:45] Starting Flask development server...
+[2026-06-20 15:04:45] Server address: http://0.0.0.0:5000
+[2026-06-20 15:04:45] Press CTRL+C to stop
+[2026-06-20 15:04:45] 

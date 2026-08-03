@@ -1,0 +1,358 @@
+{% extends "base.html" %}
+
+{% block title %}创建行程 - AI 旅游行程规划助手{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- 步骤指示器 -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="step-indicator">
+                <div class="step {% if step >= 1 %}active{% endif %} {% if step > 1 %}completed{% endif %}">
+                    <div class="step-icon">1</div>
+                    <div class="step-label">选择目的地</div>
+                </div>
+                <div class="step-line {% if step > 1 %}active{% endif %}"></div>
+                <div class="step {% if step >= 2 %}active{% endif %} {% if step > 2 %}completed{% endif %}">
+                    <div class="step-icon">2</div>
+                    <div class="step-label">偏好设置</div>
+                </div>
+                <div class="step-line {% if step > 2 %}active{% endif %}"></div>
+                <div class="step {% if step >= 3 %}active{% endif %}">
+                    <div class="step-icon">3</div>
+                    <div class="step-label">AI 生成</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Step 1: 基本信息 -->
+    {% if step == 1 %}
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-body p-5">
+                    <h2 class="mb-4">
+                        <i class="fas fa-map-marker-alt text-primary me-2"></i>选择目的地和基本设置
+                    </h2>
+                    <form method="POST">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="mb-3">
+                            <label class="form-label">
+                                <i class="fas fa-map-marker-alt me-1"></i>目的地
+                            </label>
+                            {{ form.destination_id(class="form-select") }}
+                            {% if form.destination_id.errors %}
+                                <div class="text-danger small">
+                                    {% for error in form.destination_id.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">
+                                <i class="fas fa-calendar-alt me-1"></i>行程天数
+                            </label>
+                            {{ form.days_count(class="form-control", type="number", min="1", max="30") }}
+                            {% if form.days_count.errors %}
+                                <div class="text-danger small">
+                                    {% for error in form.days_count.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">
+                                <i class="fas fa-wallet me-1"></i>预算范围
+                            </label>
+                            {{ form.budget_level(class="form-select") }}
+                            {% if form.budget_level.errors %}
+                                <div class="text-danger small">
+                                    {% for error in form.budget_level.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="text-center">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-arrow-right me-1"></i>下一步
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Step 2: 偏好设置 -->
+    {% if step == 2 %}
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-body p-5">
+                    <h2 class="mb-4">
+                        <i class="fas fa-sliders-h text-success me-2"></i>设置您的偏好
+                    </h2>
+                    <form method="POST">
+                        {{ form.hidden_tag() }}
+
+                        <div class="mb-4">
+                            <label class="form-label">
+                                <i class="fas fa-heading me-1"></i>行程标题
+                            </label>
+                            {{ form.title(class="form-control", placeholder="给您的行程起个名字") }}
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label">
+                                <i class="fas fa-tags me-1"></i>兴趣标签（最多选择5个）
+                            </label>
+                            <div class="tag-selector">
+                                {% for tag in ['美食', '历史', '自然', '都市', '海滨', '文化', '购物', '运动', '摄影', '冒险'] %}
+                                <label class="tag-card">
+                                    <input type="checkbox" name="interest_tags" value="{{ tag }}"
+                                           class="tag-checkbox">
+                                    <div class="tag-card-content">
+                                        {% if tag == '美食' %}<i class="fas fa-utensils"></i>
+                                        {% elif tag == '历史' %}<i class="fas fa-landmark"></i>
+                                        {% elif tag == '自然' %}<i class="fas fa-tree"></i>
+                                        {% elif tag == '都市' %}<i class="fas fa-city"></i>
+                                        {% elif tag == '海滨' %}<i class="fas fa-umbrella-beach"></i>
+                                        {% elif tag == '文化' %}<i class="fas fa-theater-masks"></i>
+                                        {% elif tag == '购物' %}<i class="fas fa-shopping-bag"></i>
+                                        {% elif tag == '运动' %}<i class="fas fa-running"></i>
+                                        {% elif tag == '摄影' %}<i class="fas fa-camera"></i>
+                                        {% elif tag == '冒险' %}<i class="fas fa-mountain"></i>
+                                        {% endif %}
+                                        <span>{{ tag }}</span>
+                                    </div>
+                                </label>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label">
+                                <i class="fas fa-comment-alt me-1"></i>补充说明（可选）
+                            </label>
+                            <textarea name="additional_notes" class="form-control" rows="4"
+                                      placeholder="告诉 AI 您还有什么特殊需求或偏好..."></textarea>
+                        </div>
+
+                        <div class="mb-4">
+                            <div class="form-check">
+                                <input type="checkbox" name="is_public" class="form-check-input" id="is_public"
+                                       checked>
+                                <label class="form-check-label" for="is_public">
+                                    <i class="fas fa-globe me-1"></i>完成后公开分享到社区
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="text-center">
+                            <a href="{{ url_for('itineraries.create') }}"
+                               class="btn btn-secondary me-2">
+                                <i class="fas fa-arrow-left me-1"></i>上一步
+                            </a>
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-magic me-1"></i>开始 AI 生成
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Step 3: AI 生成中 -->
+    {% if step == 3 %}
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-body p-5 text-center">
+                    <h2 class="mb-4">
+                        <i class="fas fa-robot text-info me-2"></i>AI 正在为您生成行程...
+                    </h2>
+
+                    <div class="ai-generation-status mb-4">
+                        <div class="spinner-border text-primary mb-3" role="status">
+                            <span class="visually-hidden">加载中...</span>
+                        </div>
+                        <p class="lead" id="generationStatus">正在分析您的需求...</p>
+                    </div>
+
+                    <div class="ai-output mb-4" style="display: none;">
+                        <div class="alert alert-success">
+                            <i class="fas fa-check-circle me-2"></i>
+                            <span id="generationResult">行程生成完成！</span>
+                        </div>
+                        <a href="#" id="viewItinerary" class="btn btn-success btn-lg">
+                            <i class="fas fa-eye me-1"></i>查看行程
+                        </a>
+                    </div>
+
+                    <div class="progress mb-3" style="height: 25px;">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated"
+                             role="progressbar" style="width: 100%;">
+                        </div>
+                    </div>
+
+                    <p class="text-muted">
+                        <small>
+                            <i class="fas fa-info-circle me-1"></i>
+                            AI 正在根据您的需求智能生成专属行程，请稍候...
+                        </small>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // SSE 流式接收 AI 生成结果
+        document.addEventListener('DOMContentLoaded', function() {
+            const statusEl = document.getElementById('generationStatus');
+            const outputEl = document.querySelector('.ai-output');
+            const resultEl = document.getElementById('generationResult');
+            const viewLink = document.getElementById('viewItinerary');
+
+            // 使用 EventSource 接收流式响应（需要后端支持 SSE）
+            // 由于演示，暂时使用 setTimeout 模拟
+            setTimeout(function() {
+                statusEl.textContent = '正在生成行程框架...';
+
+                setTimeout(function() {
+                    statusEl.textContent = '正在填充详细活动...';
+
+                    setTimeout(function() {
+                        statusEl.textContent = '行程生成完成！';
+                        outputEl.style.display = 'block';
+                        viewLink.href = '/itineraries/1'; // 跳转到生成的行程
+                    }, 2000);
+                }, 1500);
+            }, 1000);
+        });
+    </script>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .step-indicator {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 20px 0;
+    }
+
+    .step {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .step-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: #e9ecef;
+        color: #6c757d;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        font-weight: bold;
+        margin-bottom: 10px;
+        transition: all 0.3s;
+    }
+
+    .step.active .step-icon {
+        background: #0d6efd;
+        color: white;
+    }
+
+    .step.completed .step-icon {
+        background: #198754;
+        color: white;
+    }
+
+    .step-label {
+        font-size: 14px;
+        color: #6c757d;
+    }
+
+    .step.active .step-label,
+    .step.completed .step-label {
+        color: #0d6efd;
+        font-weight: bold;
+    }
+
+    .step-line {
+        width: 100px;
+        height: 3px;
+        background: #e9ecef;
+        margin: 0 20px;
+        margin-bottom: 30px;
+        transition: all 0.3s;
+    }
+
+    .step-line.active {
+        background: #198754;
+    }
+
+    .tag-selector {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .tag-card {
+        cursor: pointer;
+    }
+
+    .tag-card-content {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 15px 20px;
+        border: 2px solid #e9ecef;
+        border-radius: 10px;
+        transition: all 0.3s;
+        min-width: 80px;
+    }
+
+    .tag-card-content i {
+        font-size: 24px;
+        margin-bottom: 8px;
+        color: #6c757d;
+    }
+
+    .tag-card-content span {
+        font-size: 12px;
+        color: #6c757d;
+    }
+
+    .tag-checkbox {
+        display: none;
+    }
+
+    .tag-card:hover .tag-card-content {
+        border-color: #0d6efd;
+        transform: translateY(-2px);
+    }
+
+    .tag-card input:checked + .tag-card-content {
+        border-color: #0d6efd;
+        background: #e7f1ff;
+    }
+
+    .tag-card input:checked + .tag-card-content i,
+    .tag-card input:checked + .tag-card-content span {
+        color: #0d6efd;
+    }
+</style>
+{% endblock %}

@@ -1,0 +1,206 @@
+{% extends "base.html" %}
+
+{% block title %}社区广场 - AI 旅游行程规划助手{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- 页面标题 -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="page-title">
+                <i class="fas fa-users me-2"></i>社区广场
+            </h1>
+            <p class="text-muted">发现精彩旅行行程，与旅行者交流分享</p>
+        </div>
+    </div>
+
+    <!-- 排序和筛选 -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <!-- 排序切换 -->
+            <div class="btn-group" role="group">
+                <button type="button" class="btn {% if sort == 'latest' %}btn-primary{% else %}btn-outline-primary{% endif %}"
+                        onclick="sortItineraries('latest')">
+                    <i class="fas fa-clock me-1"></i>最新
+                </button>
+                <button type="button" class="btn {% if sort == 'hottest' %}btn-primary{% else %}btn-outline-primary{% endif %}"
+                        onclick="sortItineraries('hottest')">
+                    <i class="fas fa-fire me-1"></i>最热
+                </button>
+            </div>
+        </div>
+        <div class="col-md-6 text-end">
+            <span class="text-muted" id="totalCount">共 {{ itineraries|length }} 个行程</span>
+        </div>
+    </div>
+
+    <!-- 标签筛选栏 -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="tag-filter-bar">
+                <a href="{{ url_for('community.index', sort=sort or 'latest') }}"
+                   class="btn {% if not current_tag %}btn-primary{% else %}btn-outline-primary{% endif %} me-2 mb-2">
+                    <i class="fas fa-th-large me-1"></i>全部
+                </a>
+                {% for tag in ['美食', '历史', '自然', '都市', '海滨', '文化', '购物', '运动', '摄影', '冒险'] %}
+                <a href="{{ url_for('community.index', tag=tag, sort=sort or 'latest') }}"
+                   class="btn {% if current_tag == tag %}btn-primary{% else %}btn-outline-primary{% endif %} me-2 mb-2">
+                    {% if tag == '美食' %}<i class="fas fa-utensils me-1"></i>
+                    {% elif tag == '历史' %}<i class="fas fa-landmark me-1"></i>
+                    {% elif tag == '自然' %}<i class="fas fa-tree me-1"></i>
+                    {% elif tag == '都市' %}<i class="fas fa-city me-1"></i>
+                    {% elif tag == '海滨' %}<i class="fas fa-umbrella-beach me-1"></i>
+                    {% elif tag == '文化' %}<i class="fas fa-theater-masks me-1"></i>
+                    {% elif tag == '购物' %}<i class="fas fa-shopping-bag me-1"></i>
+                    {% elif tag == '运动' %}<i class="fas fa-running me-1"></i>
+                    {% elif tag == '摄影' %}<i class="fas fa-camera me-1"></i>
+                    {% elif tag == '冒险' %}<i class="fas fa-mountain me-1"></i>
+                    {% endif %}
+                    {{ tag }}
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- 瀑布流行程卡片 -->
+    <div class="row" id="itineraryGrid">
+        {% for itinerary in itineraries %}
+        <div class="col-lg-4 col-md-6 mb-4 itinerary-card" data-sort="{{ sort or 'latest' }}"
+             data-tag="{{ itinerary.interest_tags }}">
+            <a href="{{ url_for('itineraries.detail', id=itinerary.id) }}"
+               class="text-decoration-none">
+                <div class="card h-100 shadow-sm">
+                    <!-- 封面图 -->
+                    <div class="card-img-top position-relative"
+                         style="height: 200px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                        <div class="position-absolute top-0 end-0 p-2">
+                            <span class="badge bg-danger">
+                                <i class="fas fa-heart me-1"></i>{{ itinerary.like_count }}
+                            </span>
+                        </div>
+                        <div class="position-absolute bottom-0 start-0 p-2">
+                            <span class="badge bg-primary">{{ itinerary.days_count }} 天</span>
+                            <span class="badge bg-success">{{ itinerary.budget_level }}</span>
+                        </div>
+                        <div class="d-flex align-items-center justify-content-center h-100">
+                            <i class="fas fa-route fa-3x text-white"></i>
+                        </div>
+                    </div>
+
+                    <!-- 内容 -->
+                    <div class="card-body">
+                        <h5 class="card-title text-dark mb-2">{{ itinerary.title }}</h5>
+                        <p class="card-text text-muted small mb-2">
+                            <i class="fas fa-map-marker-alt me-1"></i>
+                            {{ itinerary.destination.name }}
+                        </p>
+                        <div class="d-flex flex-wrap gap-1 mb-2">
+                            {% if itinerary.interest_tags %}
+                            {% for tag in itinerary.interest_tags.split(',')[:3] %}
+                            <span class="badge bg-secondary">{{ tag }}</span>
+                            {% endfor %}
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- 作者信息 -->
+                    <div class="card-footer bg-white border-0">
+                        <div class="d-flex align-items-center">
+                            <div class="rounded-circle me-2 bg-primary text-white d-flex align-items-center justify-content-center"
+                                 style="width: 32px; height: 32px; font-size: 12px;">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <small class="text-muted">{{ itinerary.author.username }}</small>
+                            </div>
+                            <small class="text-muted">
+                                <i class="fas fa-eye me-1"></i>{{ itinerary.view_count }}
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+        {% else %}
+        <div class="col-12 text-center py-5">
+            <div class="empty-state">
+                <i class="fas fa-suitcase-rolling fa-4x text-muted mb-3"></i>
+                <h4 class="text-muted">暂无相关行程</h4>
+                <p class="text-muted">成为第一个分享行程的人吧！</p>
+                {% if current_user.is_authenticated %}
+                <a href="{{ url_for('itineraries.create') }}" class="btn btn-primary">
+                    <i class="fas fa-plus me-1"></i>创建行程
+                </a>
+                {% else %}
+                <a href="{{ url_for('auth.login') }}" class="btn btn-primary">
+                    <i class="fas fa-sign-in-alt me-1"></i>登录后创建
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- 加载更多 -->
+    {% if has_more %}
+    <div class="row mt-4">
+        <div class="col-12 text-center">
+            <button class="btn btn-outline-primary btn-lg" id="loadMoreBtn" onclick="loadMore()">
+                <i class="fas fa-arrow-down me-1"></i>加载更多
+            </button>
+            <div class="loading-spinner" style="display: none;">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">加载中...</span>
+                </div>
+                <p class="mt-2 text-muted">加载中...</p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let currentPage = 1;
+    let currentSort = '{{ sort or "latest" }}';
+    let currentTag = '{{ current_tag or "" }}';
+    let isLoading = false;
+
+    function sortItineraries(sort) {
+        currentSort = sort;
+        currentPage = 1;
+        window.location.href = '{{ url_for("community.index") }}?sort=' + sort + (currentTag ? '&tag=' + currentTag : '');
+    }
+
+    function filterByTag(tag) {
+        currentTag = tag;
+        currentPage = 1;
+        window.location.href = '{{ url_for("community.index") }}?tag=' + tag + (currentSort ? '&sort=' + currentSort : '');
+    }
+
+    function loadMore() {
+        if (isLoading) return;
+
+        const btn = document.getElementById('loadMoreBtn');
+        const spinner = document.querySelector('.loading-spinner');
+
+        btn.style.display = 'none';
+        spinner.style.display = 'block';
+        isLoading = true;
+
+        // 模拟 AJAX 加载（实际项目中替换为真实 API 调用）
+        setTimeout(function() {
+            currentPage++;
+            // 这里应该加载新数据并追加到页面
+            spinner.style.display = 'none';
+            btn.style.display = 'inline-block';
+            isLoading = false;
+
+            // 隐藏按钮表示没有更多数据
+            btn.style.display = 'none';
+        }, 1500);
+    }
+</script>
+{% endblock %}

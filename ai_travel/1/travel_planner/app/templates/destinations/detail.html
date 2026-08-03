@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+
+{% block title %}{{ destination.name }} - AI 旅游行程规划助手{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- 目的地标题区域 -->
+    <div class="bg-primary text-white py-6 rounded-lg mb-4">
+        <div class="text-center">
+            <i class="fas fa-map-marker-alt fa-5x mb-3"></i>
+            <h1 class="display-4">{{ destination.name }}</h1>
+            <p class="lead mt-2">{{ destination.province or '' }} {{ destination.city }}, {{ destination.country }}</p>
+        </div>
+    </div>
+
+    <!-- 目的地信息 -->
+    <div class="row mb-4">
+        <div class="col-lg-8">
+            <div class="mb-3">
+                <span class="badge bg-primary me-2">{{ destination.category }}</span>
+                <span class="badge bg-secondary me-2">{{ destination.best_season or '四季皆宜' }}</span>
+                <span class="badge bg-success me-2">
+                    <i class="fas fa-star me-1"></i>{{ destination.avg_rating|default(0)|round(1) }}
+                </span>
+                <span class="text-muted">
+                    <i class="fas fa-eye me-1"></i>{{ destination.view_count }} 浏览
+                </span>
+            </div>
+            <hr>
+            <div class="destination-description">
+                <h4><i class="fas fa-info-circle me-2 text-info"></i>目的地介绍</h4>
+                <p>{{ destination.description }}</p>
+            </div>
+        </div>
+
+        <!-- 侧边栏：操作按钮 -->
+        <div class="col-lg-4">
+            <div class="card shadow-sm sticky-top" style="top: 80px;">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">
+                        <i class="fas fa-suitcase-rolling me-2"></i>开始规划
+                    </h5>
+                    {% if current_user.is_authenticated %}
+                    <a href="{{ url_for('itineraries.create') }}"
+                       class="btn btn-success btn-lg w-100 mb-3">
+                        <i class="fas fa-magic me-1"></i>AI 智能规划
+                    </a>
+                    {% else %}
+                    <a href="{{ url_for('auth.login') }}"
+                       class="btn btn-success btn-lg w-100 mb-3">
+                        <i class="fas fa-sign-in-alt me-1"></i>登录后开始规划
+                    </a>
+                    {% endif %}
+                    <a href="{{ url_for('community.index') }}"
+                       class="btn btn-outline-primary w-100 mb-3">
+                        <i class="fas fa-users me-1"></i>查看社区攻略
+                    </a>
+                    {% if current_user.is_authenticated %}
+                    <button class="btn btn-outline-secondary w-100 mb-3"
+                            onclick="toggleFavorite({{ destination.id }})">
+                        <i class="fas fa-heart me-1"></i>
+                        <span id="favorite-text">收藏</span>
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 热门行程推荐 -->
+    {% if hot_itineraries %}
+    <div class="row">
+        <div class="col-12">
+            <h3><i class="fas fa-fire text-danger me-2"></i>热门行程</h3>
+            <div class="row">
+                {% for itinerary in hot_itineraries %}
+                <div class="col-md-4 mb-4">
+                    <a href="{{ url_for('itineraries.detail', id=itinerary.id) }}"
+                       class="card h-100 text-decoration-none shadow-sm">
+                        <div class="card-body">
+                            <h5 class="card-title text-dark">{{ itinerary.title }}</h5>
+                            <p class="card-text text-muted small">
+                                {{ itinerary.title[:50] }}...
+                            </p>
+                            <div class="d-flex justify-content-between">
+                                <span class="text-muted small">
+                                    <i class="fas fa-user me-1"></i>{{ itinerary.author.username }}
+                                </span>
+                                <span class="text-muted small">
+                                    <i class="fas fa-eye me-1"></i>{{ itinerary.view_count }}
+                                </span>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+function toggleFavorite(destinationId) {
+    fetch(`/destinations/${destinationId}/favorite`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token() }}',
+            'Content-Type': 'application/json'
+        }
+    }).then(response => response.json())
+    .then(data => {
+        const text = document.getElementById('favorite-text');
+        text.textContent = data.status === 'added' ? '已收藏' : '收藏';
+    });
+}
+</script>
+{% endblock %}

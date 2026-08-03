@@ -1,0 +1,415 @@
+{% extends "base.html" %}
+
+{% block title %}{{ attraction.name }} - 景点详情{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- 面包屑导航 -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('index') }}">首页</a></li>
+            {% if attraction.destination %}
+            <li class="breadcrumb-item"><a href="{{ url_for('destinations.detail', id=attraction.destination.id) }}">{{ attraction.destination.name }}</a></li>
+            {% endif %}
+            <li class="breadcrumb-item active" aria-current="page">{{ attraction.name }}</li>
+        </ol>
+    </nav>
+
+    <div class="row">
+        <!-- 左侧：景点详情 -->
+        <div class="col-lg-8">
+            <!-- 景点图片 -->
+            <div class="card shadow-sm mb-4">
+                {% if attraction.image_url %}
+                <img src="{{ attraction.image_url }}" class="card-img-top" alt="{{ attraction.name }}" style="max-height: 400px; object-fit: cover;">
+                {% else %}
+                <div class="card-img-top bg-secondary d-flex align-items-center justify-content-center" style="height: 300px;">
+                    <i class="fas fa-image fa-5x text-white"></i>
+                </div>
+                {% endif %}
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h3 class="card-title mb-0">
+                            <i class="fas fa-camera text-primary me-2"></i>{{ attraction.name }}
+                        </h3>
+                        <div class="text-warning">
+                            {% for i in range(5) %}
+                            <i class="fas fa-star{% if i >= attraction.rating|int %}-half-alt{% endif %}"></i>
+                            {% endfor %}
+                            <span class="text-muted ms-1">{{ attraction.rating }}</span>
+                        </div>
+                    </div>
+                    {% if attraction.destination %}
+                    <p class="text-muted mt-2">
+                        <i class="fas fa-map-marker-alt me-1"></i>
+                        <a href="{{ url_for('destinations.detail', id=attraction.destination.id) }}" class="text-decoration-none">
+                            {{ attraction.destination.name }}
+                        </a>
+                    </p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- AI生成详情按钮 -->
+            <div class="card shadow-sm mb-4 border-warning" id="aiGenerateCard">
+                <div class="card-body text-center">
+                    {% if not attraction.description or attraction.description|length < 50 %}
+                    <button class="btn btn-warning" id="generateDetailsBtn" onclick="generateDetails()">
+                        <i class="fas fa-magic me-2"></i>AI生成详细攻略
+                    </button>
+                    <p class="text-muted small mt-2 mb-0">点击让AI为这个景点生成详细介绍、游玩攻略和美食推荐</p>
+                    <div id="loadingSpinner" style="display: none;" class="mt-3">
+                        <div class="spinner-border text-warning" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2">AI正在生成攻略，请稍候...</p>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-success mb-0">
+                        <i class="fas fa-check-circle me-2"></i>景点攻略已生成
+                        <button class="btn btn-sm btn-outline-success ms-3" onclick="regenerateDetails()">
+                            <i class="fas fa-refresh me-1"></i>重新生成
+                        </button>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- 基本信息 -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>基本信息</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-borderless">
+                        <tbody>
+                            <tr>
+                                <th width="120"><i class="fas fa-map-pin text-danger me-2"></i>地址</th>
+                                <td>{{ attraction.address or '暂无信息' }}</td>
+                            </tr>
+                            <tr>
+                                <th><i class="fas fa-clock text-info me-2"></i>开放时间</th>
+                                <td>{{ attraction.opening_hours or '暂无信息' }}</td>
+                            </tr>
+                            <tr>
+                                <th><i class="fas fa-ticket-alt text-success me-2"></i>门票</th>
+                                <td>
+                                    <span class="badge bg-success">{{ attraction.ticket_price or '免费' }}</span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th><i class="fas fa-clock text-warning me-2"></i>建议时长</th>
+                                <td>
+                                    {% if attraction.suggested_duration %}
+                                    约 {{ attraction.suggested_duration // 60 }} 小时 {{ attraction.suggested_duration % 60 }} 分钟
+                                    {% else %}
+                                    暂无建议
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th><i class="fas fa-calendar-alt text-primary me-2"></i>最佳季节</th>
+                                <td>{{ attraction.best_season or '四季皆宜' }}</td>
+                            </tr>
+                            <tr>
+                                <th><i class="fas fa-tag text-secondary me-2"></i>类别</th>
+                                <td>
+                                    {% if attraction.category %}
+                                    <span class="badge bg-secondary">{{ attraction.category }}</span>
+                                    {% else %}
+                                    景点
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 详细介绍 -->
+            {% if attraction.description and attraction.description|length >= 50 %}
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-book-open me-2"></i>景点介绍</h5>
+                </div>
+                <div class="card-body">
+                    <p class="card-text" style="line-height: 1.8;">{{ attraction.description }}</p>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- 玩法推荐 -->
+            {% if attraction.play_tips and attraction.play_tips|length >= 20 %}
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0"><i class="fas fa-lightbulb me-2"></i>玩法推荐</h5>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">{{ attraction.play_tips }}</p>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- 推荐美食 -->
+            {% if attraction.get_recommended_dishes() %}
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0"><i class="fas fa-utensils me-2"></i>推荐美食</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for dish in attraction.get_recommended_dishes() %}
+                        <div class="col-md-4 mb-2">
+                            <div class="card h-100">
+                                <div class="card-body py-2">
+                                    <i class="fas fa-utensils text-warning me-1"></i>
+                                    {{ dish }}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- 附近景点 -->
+            {% if attraction.get_nearby_attractions() %}
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-location-dot me-2"></i>附近景点</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group list-group-flush">
+                        {% set nearby_list = attraction.get_nearby_attractions() %}
+                        {% set distances_list = [] %}
+                        {% if attraction.nearby_distance %}
+                            {% set distances_list = attraction.nearby_distance|from_json %}
+                        {% endif %}
+                        {% for nearby in nearby_list %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <i class="fas fa-map-marker-alt text-success me-2"></i>
+                                {{ nearby }}
+                            </div>
+                            {% if distances_list and loop.index0 < distances_list|length %}
+                            <span class="badge bg-secondary">{{ distances_list[loop.index0] }}</span>
+                            {% endif %}
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- 右侧：侧边栏 -->
+        <div class="col-lg-4">
+            <!-- 操作按钮 -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <button class="btn btn-primary w-100 mb-2" onclick="addToItinerary()">
+                        <i class="fas fa-plus me-1"></i>添加到行程
+                    </button>
+                    <button class="btn btn-outline-secondary w-100" onclick="shareAttraction()">
+                        <i class="fas fa-share-alt me-1"></i>分享景点
+                    </button>
+                </div>
+            </div>
+
+            <!-- 地图位置 -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0"><i class="fas fa-map me-2"></i>地图位置</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div id="attractionMap" style="height: 250px; background: #f0f0f0;">
+                        <div class="d-flex align-items-center justify-content-center h-100 text-muted">
+                            <i class="fas fa-spinner fa-spin me-2"></i>正在加载地图...
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 统计信息 -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0"><i class="fas fa-chart-bar me-2"></i>热度统计</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span><i class="fas fa-eye text-info me-2"></i>浏览次数</span>
+                        <span class="badge bg-info">{{ attraction.view_count }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span><i class="fas fa-heart text-danger me-2"></i>收藏次数</span>
+                        <span class="badge bg-danger">{{ attraction.like_count }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 相关推荐 -->
+            {% if attraction.destination %}
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-compass me-2"></i>{{ attraction.destination.name }}更多景点</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush">
+                        {% for related in attraction.destination.attractions.limit(5).all() %}
+                        {% if related.id != attraction.id %}
+                        <a href="{{ url_for('attractions.detail', id=related.id) }}" class="list-group-item list-group-item-action">
+                            <div class="d-flex align-items-center">
+                                {% if related.image_url %}
+                                <img src="{{ related.image_url }}" class="rounded me-2" style="width: 50px; height: 50px; object-fit: cover;" alt="">
+                                {% else %}
+                                <div class="rounded bg-secondary me-2 d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                                    <i class="fas fa-image text-white"></i>
+                                </div>
+                                {% endif %}
+                                <div>
+                                    <div class="fw-bold">{{ related.name }}</div>
+                                    <small class="text-muted">{{ related.category or '景点' }}</small>
+                                </div>
+                            </div>
+                        </a>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    var map = null;
+
+    document.addEventListener('DOMContentLoaded', function() {
+        initMap();
+    });
+
+    function initMap() {
+        var mapContainer = document.getElementById('attractionMap');
+        if (!mapContainer) return;
+
+        // 获取坐标，使用目的地坐标作为备选
+        var destLat = {{ attraction.destination.latitude if attraction.destination and attraction.destination.latitude else 31.2304 }};
+        var destLng = {{ attraction.destination.longitude if attraction.destination and attraction.destination.longitude else 121.4737 }};
+
+        var lat = {{ attraction.latitude if attraction.latitude else 'null' }};
+        var lng = {{ attraction.longitude if attraction.longitude else 'null' }};
+
+        // 如果景点坐标无效，使用目的地坐标
+        if (lat === null || lng === null || lat === 0 || lng === 0 || isNaN(lat) || isNaN(lng)) {
+            lat = destLat;
+            lng = destLng;
+        }
+
+        try {
+            // 移除加载提示
+            mapContainer.innerHTML = '';
+
+            map = L.map('attractionMap', {
+                center: [lat, lng],
+                zoom: 15,
+                zoomControl: true
+            });
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap contributors'
+            }).addTo(map);
+
+            // 添加标记
+            var marker = L.marker([lat, lng]).addTo(map);
+            marker.bindPopup('<strong>{{ attraction.name|js_escape }}</strong><br>{{ (attraction.address or "")|js_escape }}').openPopup();
+        } catch(e) {
+            console.error('地图初始化失败:', e);
+            mapContainer.innerHTML = '<div class="text-center py-5 text-muted"><i class="fas fa-map fa-3x mb-3"></i><br>地图加载失败</div>';
+        }
+    }
+
+    function generateDetails() {
+        var btn = document.getElementById('generateDetailsBtn');
+        var spinner = document.getElementById('loadingSpinner');
+
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>生成中...';
+        spinner.style.display = 'block';
+
+        fetch('{{ url_for("attractions.generate_details", id=attraction.id) }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('生成失败: ' + (data.message || '未知错误'));
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-magic me-2"></i>重试生成';
+                spinner.style.display = 'none';
+            }
+        })
+        .catch(error => {
+            alert('网络错误，请重试');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-magic me-2"></i>重试生成';
+            spinner.style.display = 'none';
+        });
+    }
+
+    function regenerateDetails() {
+        if (confirm('确定要重新生成攻略吗？')) {
+            generateDetails();
+        }
+    }
+
+    function addToItinerary() {
+        fetch('{{ url_for("attractions.add_to_itinerary", id=attraction.id) }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            body: JSON.stringify({})
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                if (data.redirect_url) {
+                    if (confirm('是否跳转到我的行程页面查看？')) {
+                        window.location.href = data.redirect_url;
+                    }
+                }
+            } else {
+                alert('添加失败: ' + (data.message || '未知错误'));
+            }
+        })
+        .catch(error => {
+            alert('网络错误，请重试');
+        });
+    }
+
+    function shareAttraction() {
+        if (navigator.share) {
+            navigator.share({
+                title: '{{ attraction.name }}',
+                text: '{{ (attraction.description[:100] if attraction.description else "")|js_escape }}',
+                url: window.location.href
+            });
+        } else {
+            navigator.clipboard.writeText(window.location.href);
+            alert('链接已复制到剪贴板！');
+        }
+    }
+</script>
+{% endblock %}

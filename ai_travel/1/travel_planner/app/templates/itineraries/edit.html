@@ -1,0 +1,292 @@
+{% extends "base.html" %}
+
+{% block title %}编辑行程 - AI 旅游行程规划助手{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <!-- 行程ID隐藏字段 -->
+    <input type="hidden" id="itineraryId" value="{{ itinerary.id }}">
+    <div class="row">
+        <!-- 左侧：行程编辑区 -->
+        <div class="col-lg-8">
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h4>
+                            <i class="fas fa-edit text-primary me-2"></i>编辑行程
+                        </h4>
+                        <div>
+                            <button class="btn btn-outline-secondary me-2" onclick="previewItinerary()">
+                                <i class="fas fa-eye me-1"></i>预览
+                            </button>
+                            <button class="btn btn-primary" onclick="saveItinerary()">
+                                <i class="fas fa-save me-1"></i>保存
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 行程基本信息 -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label">行程标题</label>
+                            <input type="text" class="form-control" id="itineraryTitle"
+                                   value="{{ itinerary.title }}">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">目的地</label>
+                            <input type="text" class="form-control" value="{{ itinerary.destination.name }}"
+                                   readonly>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">总天数</label>
+                            <input type="text" class="form-control"
+                                   value="{{ itinerary.days_count }} 天" readonly>
+                        </div>
+                    </div>
+
+                    <!-- 天数折叠面板 -->
+                    <div class="accordion" id="daysAccordion">
+                        {% for day in itinerary.days %}
+                        <div class="accordion-item" data-day-id="{{ day.id }}">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button {% if loop.index > 1 %}collapsed{% endif %}"
+                                        type="button" data-bs-toggle="collapse"
+                                        data-bs-target="#day{{ loop.index }}">
+                                    <i class="fas fa-calendar-day me-2 text-primary"></i>
+                                    第 {{ loop.index }} 天
+                                    <span class="badge bg-secondary ms-2">{{ day.theme or '待设置' }}</span>
+                                </button>
+                            </h2>
+                            <div id="day{{ loop.index }}"
+                                 class="accordion-collapse collapse {% if loop.index == 1 %}show{% endif %}"
+                                 data-bs-parent="#daysAccordion">
+                                <div class="accordion-body">
+                                    <!-- 每天主题 -->
+                                    <div class="mb-3">
+                                        <label class="form-label">当天主题</label>
+                                        <input type="text" class="form-control day-theme"
+                                               placeholder="例如：历史文化探索日"
+                                               value="{{ day.theme or '' }}">
+                                    </div>
+
+                                    <!-- 活动列表（可拖拽排序） -->
+                                    <div class="activity-list" data-day-index="{{ loop.index0 }}">
+                                        {% for activity in day.activities %}
+                                        <div class="activity-card mb-3" data-activity-id="{{ activity.id }}">
+                                            <div class="card">
+                                                <div class="card-body">
+                                                    <div class="row">
+                                                        <div class="col-1 d-flex align-items-center">
+                                                            <i class="fas fa-grip grip-handle text-muted"></i>
+                                                        </div>
+                                                        <div class="col-2">
+                                                            <select class="form-select activity-type">
+                                                                <option value="景点" {% if activity.type=='景点' %}selected{% endif %}>
+                                                                    <i class="fas fa-camera"></i>景点
+                                                                </option>
+                                                                <option value="美食" {% if activity.type=='美食' %}selected{% endif %}>美食</option>
+                                                                <option value="住宿" {% if activity.type=='住宿' %}selected{% endif %}>住宿</option>
+                                                                <option value="交通" {% if activity.type=='交通' %}selected{% endif %}>交通</option>
+                                                                <option value="购物" {% if activity.type=='购物' %}selected{% endif %}>购物</option>
+                                                            </select>
+                                                        </div>
+                                                        <div class="col-4">
+                                                            <input type="text" class="form-control activity-name"
+                                                                   placeholder="活动名称"
+                                                                   value="{{ activity.name }}">
+                                                        </div>
+                                                        <div class="col-2">
+                                                            <input type="text" class="form-control activity-duration"
+                                                                   placeholder="时长"
+                                                                   value="{{ activity.duration }}">
+                                                        </div>
+                                                        <div class="col-2">
+                                                            <input type="number" class="form-control activity-cost"
+                                                                   placeholder="费用"
+                                                                   value="{{ activity.cost }}">
+                                                        </div>
+                                                        <div class="col-1 d-flex align-items-center">
+                                                            <button class="btn btn-sm btn-outline-danger"
+                                                                    onclick="removeActivity(this)">
+                                                                <i class="fas fa-trash"></i>
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                    <div class="row mt-2">
+                                                        <div class="col-11 offset-1">
+                                                            <input type="text" class="form-control form-control-sm activity-tips"
+                                                                   placeholder="小贴士（可选）"
+                                                                   value="{{ activity.tips or '' }}">
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {% else %}
+                                        <!-- 默认空活动卡片 -->
+                                        <div class="activity-card mb-3" data-activity-id="new">
+                                            <div class="card">
+                                                <div class="card-body">
+                                                    <div class="row">
+                                                        <div class="col-1 d-flex align-items-center">
+                                                            <i class="fas fa-grip grip-handle text-muted"></i>
+                                                        </div>
+                                                        <div class="col-2">
+                                                            <select class="form-select activity-type">
+                                                                <option value="景点">景点</option>
+                                                                <option value="美食">美食</option>
+                                                                <option value="住宿">住宿</option>
+                                                                <option value="交通">交通</option>
+                                                                <option value="购物">购物</option>
+                                                            </select>
+                                                        </div>
+                                                        <div class="col-4">
+                                                            <input type="text" class="form-control activity-name"
+                                                                   placeholder="活动名称">
+                                                        </div>
+                                                        <div class="col-2">
+                                                            <input type="text" class="form-control activity-duration"
+                                                                   placeholder="时长">
+                                                        </div>
+                                                        <div class="col-2">
+                                                            <input type="number" class="form-control activity-cost"
+                                                                   placeholder="费用">
+                                                        </div>
+                                                        <div class="col-1 d-flex align-items-center">
+                                                            <button class="btn btn-sm btn-outline-danger"
+                                                                    onclick="removeActivity(this)">
+                                                                <i class="fas fa-trash"></i>
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+
+                                    <!-- 添加活动按钮 -->
+                                    <button class="btn btn-outline-primary btn-sm"
+                                            onclick="addActivity({{ loop.index0 }})">
+                                        <i class="fas fa-plus me-1"></i>添加活动
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <!-- 添加天数按钮 -->
+                    <button class="btn btn-success mt-3" onclick="addDay()">
+                        <i class="fas fa-plus me-1"></i>添加第 {{ itinerary.days_count + 1 }} 天
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 右侧：费用统计和操作 -->
+        <div class="col-lg-4">
+            <!-- 费用饼图 -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">
+                        <i class="fas fa-chart-pie me-2 text-info"></i>费用统计
+                    </h5>
+                    <canvas id="costChart" height="200"></canvas>
+                    <div class="mt-3">
+                        <table class="table table-sm">
+                            <tbody>
+                                <tr>
+                                    <td><i class="fas fa-camera text-primary me-2"></i>景点</td>
+                                    <td class="text-end" id="costAttractions">¥0</td>
+                                </tr>
+                                <tr>
+                                    <td><i class="fas fa-utensils text-warning me-2"></i>美食</td>
+                                    <td class="text-end" id="costFood">¥0</td>
+                                </tr>
+                                <tr>
+                                    <td><i class="fas fa-bed text-secondary me-2"></i>住宿</td>
+                                    <td class="text-end" id="costAccommodation">¥0</td>
+                                </tr>
+                                <tr>
+                                    <td><i class="fas fa-car text-success me-2"></i>交通</td>
+                                    <td class="text-end" id="costTransport">¥0</td>
+                                </tr>
+                                <tr>
+                                    <td><i class="fas fa-shopping-bag text-danger me-2"></i>购物</td>
+                                    <td class="text-end" id="costShopping">¥0</td>
+                                </tr>
+                                <tr class="table-primary">
+                                    <td><strong>合计</strong></td>
+                                    <td class="text-end"><strong id="costTotal">¥0</strong></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 操作按钮 -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">
+                        <i class="fas fa-cog me-2"></i>操作
+                    </h5>
+                    <button class="btn btn-primary w-100 mb-2" onclick="saveItinerary()">
+                        <i class="fas fa-save me-1"></i>保存行程
+                    </button>
+                    <button class="btn btn-outline-primary w-100 mb-2" onclick="exportPDF()">
+                        <i class="fas fa-file-pdf me-1"></i>导出 PDF
+                    </button>
+                    <button class="btn btn-outline-success w-100 mb-2" onclick="shareItinerary()">
+                        <i class="fas fa-share-alt me-1"></i>公开分享
+                    </button>
+                    <button class="btn btn-outline-danger w-100" onclick="deleteItinerary()">
+                        <i class="fas fa-trash me-1"></i>删除行程
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- AI 对话侧边栏 -->
+<div class="ai-chat-sidebar" id="aiChatSidebar">
+    <div class="chat-header">
+        <h5><i class="fas fa-robot me-2"></i>AI 助手</h5>
+        <button class="btn btn-sm btn-outline-secondary" onclick="toggleAIChat()">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+    <div class="chat-messages" id="chatMessages">
+        <div class="message bot-message">
+            <div class="message-content">
+                你好！我是你的 AI 旅行助手。你可以告诉我想要如何调整行程，比如：
+                <ul>
+                    <li>把第三天的行程改成轻松一点</li>
+                    <li>添加更多美食相关的活动</li>
+                    <li>把预算降低一些</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div class="chat-input">
+        <input type="text" class="form-control" id="chatInput"
+               placeholder="输入你的调整需求...">
+        <button class="btn btn-primary" onclick="sendChatMessage()">
+            <i class="fas fa-paper-plane"></i>
+        </button>
+    </div>
+</div>
+
+<!-- AI 聊天悬浮按钮 -->
+<button class="ai-chat-toggle" onclick="toggleAIChat()" id="aiChatToggle">
+    <i class="fas fa-comments"></i>
+</button>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="{{ url_for('static', filename='js/itinerary_editor.js') }}"></script>
+<script src="{{ url_for('static', filename='js/ai_chat.js') }}"></script>
+{% endblock %}

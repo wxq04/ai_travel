@@ -1,0 +1,232 @@
+{% extends "base.html" %}
+
+{% block title %}我的收藏景点 - {{ super() }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2 class="section-title">
+                <i class="fas fa-heart me-2 text-danger"></i>我的收藏景点
+            </h2>
+            <p class="text-muted">管理您收藏的景点，可以将它们添加到行程中</p>
+        </div>
+    </div>
+
+    {% if saved_attractions %}
+    <div class="row">
+        {% for item in saved_attractions %}
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card h-100 shadow-sm">
+                <div class="card-header bg-gradient text-white d-flex justify-content-between align-items-center"
+                     style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                    <div>
+                        <i class="fas fa-map-marker-alt me-1"></i>
+                        {{ item.attraction.category or '景点' }}
+                    </div>
+                    <button class="btn btn-sm btn-light unsave-btn"
+                            data-id="{{ item.attraction.id }}"
+                            title="取消收藏">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+                <div class="card-body">
+                    <h5 class="card-title">{{ item.attraction.name }}</h5>
+                    {% if item.attraction.description %}
+                    <p class="card-text text-muted small">
+                        {{ item.attraction.description[:80] }}{% if item.attraction.description|length > 80 %}...{% endif %}
+                    </p>
+                    {% endif %}
+                    <div class="mb-2">
+                        {% if item.attraction.address %}
+                        <small class="text-muted">
+                            <i class="fas fa-map-pin me-1"></i>{{ item.attraction.address[:30] }}{% if item.attraction.address|length > 30 %}...{% endif %}
+                        </small>
+                        {% endif %}
+                    </div>
+                    {% if item.attraction.ticket_price %}
+                    <div class="mb-2">
+                        <small class="text-success">
+                            <i class="fas fa-ticket-alt me-1"></i>{{ item.attraction.ticket_price }}
+                        </small>
+                    </div>
+                    {% endif %}
+                    <div class="text-muted small">
+                        <i class="fas fa-clock me-1"></i>收藏于 {{ item.created_at.strftime('%Y-%m-%d %H:%M') }}
+                    </div>
+                </div>
+                <div class="card-footer bg-transparent">
+                    <div class="d-flex gap-2">
+                        <a href="{{ url_for('attractions.detail', id=item.attraction.id) }}"
+                           class="btn btn-outline-primary btn-sm flex-fill">
+                            <i class="fas fa-eye me-1"></i>查看详情
+                        </a>
+                        <button class="btn btn-primary btn-sm flex-fill add-to-itinerary-btn"
+                                data-id="{{ item.attraction.id }}"
+                                data-name="{{ item.attraction.name }}">
+                            <i class="fas fa-plus me-1"></i>添加到行程
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center py-5">
+        <i class="fas fa-heart text-muted fa-4x mb-3"></i>
+        <h4 class="text-muted">暂无收藏景点</h4>
+        <p class="text-muted">去搜索景点并收藏它们吧</p>
+        <a href="{{ url_for('attractions.search') }}" class="btn btn-primary">
+            <i class="fas fa-search me-2"></i>搜索景点
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<!-- 添加到行程模态框 -->
+<div class="modal fade" id="addToItineraryModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">添加到行程</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p id="attractionName" class="fw-bold"></p>
+                <div class="mb-3">
+                    <label class="form-label">选择行程</label>
+                    <select id="itinerarySelect" class="form-select">
+                        <option value="">加载中...</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">选择天数</label>
+                    <select id="daySelect" class="form-select">
+                        <option value="1">第1天</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" id="confirmAddBtn">
+                    <i class="fas fa-plus me-1"></i>确认添加
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // CSRF Token
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+
+    // 取消收藏按钮
+    document.querySelectorAll('.unsave-btn').forEach(btn => {
+        btn.addEventListener('click', async function() {
+            if (!confirm('确定要取消收藏这个景点吗？')) return;
+
+            const id = this.dataset.id;
+            try {
+                const response = await fetch(`/attractions/${id}/save`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken
+                    }
+                });
+                const data = await response.json();
+                if (data.success) {
+                    // 移除卡片
+                    this.closest('.col-lg-4').remove();
+                    // 检查是否为空
+                    if (document.querySelectorAll('.card').length === 0) {
+                        location.reload();
+                    }
+                } else {
+                    alert(data.message || '操作失败');
+                }
+            } catch (e) {
+                alert('操作失败');
+            }
+        });
+    });
+
+    // 添加到行程按钮
+    let selectedAttractionId = null;
+    const modal = new bootstrap.Modal(document.getElementById('addToItineraryModal'));
+
+    document.querySelectorAll('.add-to-itinerary-btn').forEach(btn => {
+        btn.addEventListener('click', async function() {
+            selectedAttractionId = this.dataset.id;
+            document.getElementById('attractionName').textContent = '景点: ' + this.dataset.name;
+
+            // 加载用户行程
+            const itinerarySelect = document.getElementById('itinerarySelect');
+            itinerarySelect.innerHTML = '<option value="">加载中...</option>';
+
+            try {
+                const response = await fetch('/api/my-itineraries');
+                const data = await response.json();
+                if (data.success && data.itineraries.length > 0) {
+                    itinerarySelect.innerHTML = data.itineraries.map(it =>
+                        `<option value="${it.id}">${it.title}</option>`
+                    ).join('');
+                } else {
+                    itinerarySelect.innerHTML = '<option value="">暂无行程，请先创建行程</option>';
+                }
+            } catch (e) {
+                itinerarySelect.innerHTML = '<option value="">加载失败</option>';
+            }
+
+            modal.show();
+        });
+    });
+
+    // 确认添加
+    document.getElementById('confirmAddBtn').addEventListener('click', async function() {
+        if (!selectedAttractionId) return;
+
+        const itineraryId = document.getElementById('itinerarySelect').value;
+        if (!itineraryId) {
+            alert('请先选择一个行程');
+            return;
+        }
+
+        this.disabled = true;
+        this.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>添加中...';
+
+        try {
+            const response = await fetch(`/attractions/${selectedAttractionId}/add_to_itinerary`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                },
+                body: JSON.stringify({
+                    itinerary_id: parseInt(itineraryId),
+                    day_number: parseInt(document.getElementById('daySelect').value)
+                })
+            });
+            const data = await response.json();
+
+            if (data.success) {
+                alert('添加成功！');
+                modal.hide();
+            } else {
+                alert(data.message || '添加失败');
+            }
+        } catch (e) {
+            alert('添加失败');
+        }
+
+        this.disabled = false;
+        this.innerHTML = '<i class="fas fa-plus me-1"></i>确认添加';
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,238 @@
+{% extends "base.html" %}
+
+{% block title %}AI 旅游行程规划助手{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero-section bg-gradient text-white py-2">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <h1 class="display-4 mb-2">
+                    <i class="fas fa-plane-departure me-2"></i>AI 智能旅行规划
+                </h1>
+                <p class="lead mb-3">
+                    输入您的旅行偏好，AI 将为您生成个性化的旅行行程方案
+                </p>
+                <a href="{{ url_for('itineraries.create') }}" class="btn btn-primary btn-lg">
+                    <i class="fas fa-magic me-2"></i>开始规划
+                </a>
+            </div>
+            <div class="col-lg-4 d-none d-lg-block">
+                <div class="text-center">
+                    <i class="fas fa-globe-americas fa-10x opacity-80"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- 热门目的地 -->
+<section class="py-3">
+    <div class="container">
+        <div class="row mb-4">
+            <div class="col-12">
+                <h2 class="section-title">
+                    <i class="fas fa-fire text-danger me-2"></i>热门目的地
+                </h2>
+            </div>
+        </div>
+
+        <div class="row">
+            {% for destination in hot_destinations %}
+            <div class="col-lg-4 col-md-6 mb-4">
+                <a href="{{ url_for('destinations.detail', id=destination.id) }}"
+                   class="destination-card text-decoration-none">
+                    <div class="card h-100 shadow-sm">
+                        <!-- 标题区域 - 无图片 -->
+                        <div class="card-header bg-primary text-white text-center py-3">
+                            <i class="fas fa-map-marker-alt fa-2x mb-1"></i>
+                            <h5 class="card-title">{{ destination.name }}</h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="card-text text-muted small">
+                                <i class="fas fa-map-marker-alt me-1"></i>{{ destination.city }}, {{ destination.country }}
+                            </p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="badge bg-primary">
+                                    {{ destination.category }}
+                                </span>
+                                <span class="badge bg-secondary">
+                                    {{ destination.best_season or '四季皆宜' }}
+                                </span>
+                            </div>
+                            <div class="mt-2">
+                                <span class="text-warning">
+                                    {% for i in range(5) %}
+                                    <i class="fas fa-star{% if i >= destination.avg_rating|int %} text-muted{% endif %}"></i>
+                                    {% endfor %}
+                                </span>
+                                <span class="text-muted ms-1 small">
+                                    {{ "%.1f"|format(destination.avg_rating) }} ({{ destination.view_count }} 浏览)
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            {% else %}
+            <div class="col-12 text-center py-5">
+                <p class="text-muted">
+                    <i class="fas fa-info-circle me-2"></i>暂无热门目的地
+                </p>
+                <a href="{{ url_for('destinations.list') }}" class="btn btn-primary">
+                    <i class="fas fa-compass me-1"></i>浏览所有目的地
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="text-center mt-4">
+            <a href="{{ url_for('destinations.list') }}" class="btn btn-outline-primary btn-lg">
+                <i class="fas fa-th-large me-2"></i>查看所有目的地
+            </a>
+        </div>
+    </div>
+</section>
+
+<!-- 社区精选行程 -->
+<section class="py-3 bg-light">
+    <div class="container">
+        <div class="row mb-4">
+            <div class="col-12">
+                <h2 class="section-title">
+                    <i class="fas fa-star me-2 text-warning"></i>社区精选行程
+                </h2>
+            </div>
+        </div>
+
+        <div class="row">
+            {% for itinerary in featured_itineraries %}
+            <div class="col-lg-4 col-md-6 mb-4">
+                <a href="{{ url_for('itineraries.detail', id=itinerary.id) }}"
+                   class="text-decoration-none">
+                    <div class="card h-100 shadow-sm">
+                        <!-- 无图片，使用图标替代 -->
+                        <div class="card-header text-white text-center py-3"
+                             style="background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);">
+                            <i class="fas fa-route fa-2x"></i>
+                            <h5 class="card-title mt-1">{{ itinerary.title }}</h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="card-text text-muted small">
+                                <i class="fas fa-calendar-alt me-1"></i>{{ itinerary.days_count }} 天行程
+                                <span class="mx-2">|</span>
+                                <i class="fas fa-wallet me-1"></i>{{ itinerary.budget_level }}
+                            </p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div class="user-info">
+                                    <!-- 用户图标 -->
+                                    <div class="rounded-circle me-2 bg-primary text-white d-flex align-items-center justify-content-center"
+                                         style="width: 30px; height: 30px; font-size: 10px;">
+                                        <i class="fas fa-user"></i>
+                                    </div>
+                                    <span class="text-muted small">{{ itinerary.author.username }}</span>
+                                </div>
+                                <div class="engagement">
+                                    <span class="text-danger me-3">
+                                        <i class="fas fa-heart me-1"></i>{{ itinerary.like_count }}
+                                    </span>
+                                    <span class="text-muted">
+                                        <i class="fas fa-eye me-1"></i>{{ itinerary.view_count }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            {% else %}
+            <div class="col-12 text-center py-5">
+                <div class="empty-state">
+                    <i class="fas fa-suitcase-rolling fa-4x text-muted mb-3"></i>
+                    <h4 class="text-muted">暂无精选行程</h4>
+                    <p class="text-muted">快来分享您的旅行故事吧！</p>
+                    {% if current_user.is_authenticated %}
+                    <a href="{{ url_for('itineraries.create') }}" class="btn btn-primary">
+                        <i class="fas fa-plus me-1"></i>创建行程
+                    </a>
+                    {% else %}
+                    <a href="{{ url_for('auth.login') }}" class="btn btn-primary">
+                        <i class="fas fa-sign-in-alt me-1"></i>登录后创建
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- 功能介绍 -->
+<section class="py-3">
+    <div class="container">
+        <div class="row mb-4">
+            <div class="col-12 text-center">
+                <h2 class="section-title">
+                    <i class="fas fa-feather-alt me-2 text-info"></i>为什么选择我们
+                </h2>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="card text-center h-100">
+                    <div class="card-body">
+                        <div class="icon-circle bg-primary text-white mx-auto mb-3">
+                            <i class="fas fa-brain fa-2x"></i>
+                        </div>
+                        <h4 class="card-title">AI 智能规划</h4>
+                        <p class="card-text text-muted small">
+                            基于深度学习算法，为您量身定制最佳旅行方案
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="card text-center h-100">
+                    <div class="card-body">
+                        <div class="icon-circle bg-success text-white mx-auto mb-3">
+                            <i class="fas fa-users fa-2x"></i>
+                        </div>
+                        <h4 class="card-title">社区分享</h4>
+                        <p class="card-text text-muted small">
+                            与百万旅行者分享经验，发现更多精彩行程
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="card text-center h-100">
+                    <div class="card-body">
+                        <div class="icon-circle bg-info text-white mx-auto mb-3">
+                            <i class="fas fa-map fa-2x"></i>
+                        </div>
+                        <h4 class="card-title">地图集成</h4>
+                        <p class="card-text text-muted small">
+                            无缝集成高德地图，实时导航与位置服务
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="card text-center h-100">
+                    <div class="card-body">
+                        <div class="icon-circle bg-warning text-white mx-auto mb-3">
+                            <i class="fas fa-file-pdf fa-2x"></i>
+                        </div>
+                        <h4 class="card-title">PDF 导出</h4>
+                        <p class="card-text text-muted small">
+                            一键导出行程 PDF，随时查看您的旅行计划
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,336 @@
+{% extends "base.html" %}
+
+{% block title %}景点搜索{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('index') }}">首页</a></li>
+            <li class="breadcrumb-item active">景点搜索</li>
+        </ol>
+    </nav>
+
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1 class="mb-3">
+                <i class="fas fa-search text-primary me-2"></i>景点搜索
+                {% if keyword %}
+                <small class="text-muted">- 搜索"{{ keyword }}"</small>
+                {% endif %}
+            </h1>
+        </div>
+        <div class="col-md-4">
+            <form method="GET" action="{{ url_for('attractions.search') }}" class="d-flex">
+                <input type="text" name="keyword" class="form-control me-2"
+                       placeholder="搜索景点名称..." value="{{ keyword or '' }}">
+                <input type="hidden" name="category" value="{{ category or '' }}">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-search"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- AI搜索提示 -->
+    {% if is_ai_generated and ai_attractions %}
+    <div class="alert alert-info mb-4">
+        <i class="fas fa-robot me-2"></i>
+        <strong>AI智能搜索：</strong>本地数据库未找到足够的景点，已通过AI为您补充 {{ ai_attractions|length }} 个推荐景点。
+        <span class="badge bg-warning text-dark ms-2">AI推荐</span>
+    </div>
+    {% endif %}
+
+    <!-- 分类筛选 -->
+    <div class="mb-4">
+        <div class="btn-group" role="group">
+            <a href="{{ url_for('attractions.search', keyword=keyword or '') }}"
+               class="btn {% if not category %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                全部
+            </a>
+            <a href="{{ url_for('attractions.search', keyword=keyword or '', category='景点') }}"
+               class="btn {% if category == '景点' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                <i class="fas fa-camera me-1"></i>景点
+            </a>
+            <a href="{{ url_for('attractions.search', keyword=keyword or '', category='餐厅') }}"
+               class="btn {% if category == '餐厅' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                <i class="fas fa-utensils me-1"></i>餐厅
+            </a>
+            <a href="{{ url_for('attractions.search', keyword=keyword or '', category='购物') }}"
+               class="btn {% if category == '购物' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                <i class="fas fa-shopping-bag me-1"></i>购物
+            </a>
+            <a href="{{ url_for('attractions.search', keyword=keyword or '', category='文化') }}"
+               class="btn {% if category == '文化' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                <i class="fas fa-landmark me-1"></i>文化
+            </a>
+        </div>
+    </div>
+
+    <!-- 本地数据库结果 -->
+    {% if attractions %}
+    <h4 class="mb-3">
+        <i class="fas fa-database text-success me-2"></i>本地景点
+        <span class="badge bg-secondary">{{ attractions|length }}</span>
+    </h4>
+    <div class="row mb-5">
+        {% for attraction in attractions %}
+        <div class="col-md-4 mb-4">
+            <div class="card h-100 shadow-sm">
+                {% if attraction.image_url %}
+                <img src="{{ attraction.image_url }}" class="card-img-top" alt="{{ attraction.name }}"
+                     style="height: 200px; object-fit: cover;">
+                {% else %}
+                <div class="card-img-top bg-secondary d-flex align-items-center justify-content-center"
+                     style="height: 200px;">
+                    <i class="fas fa-image fa-4x text-white"></i>
+                </div>
+                {% endif %}
+                <div class="card-body">
+                    <h5 class="card-title">{{ attraction.name }}</h5>
+                    <p class="card-text text-muted small">
+                        {{ attraction.description[:80] if attraction.description else '暂无描述' }}...
+                    </p>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="badge bg-secondary">{{ attraction.category or '景点' }}</span>
+                        <div class="text-warning">
+                            <i class="fas fa-star"></i>
+                            <span>{{ attraction.rating or '0.0' }}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer bg-white">
+                    <div class="d-flex gap-2 mb-2">
+                        <a href="{{ url_for('attractions.detail', id=attraction.id) }}"
+                           class="btn btn-outline-primary btn-sm flex-fill">
+                            <i class="fas fa-info-circle me-1"></i>查看详情
+                        </a>
+                        {% if current_user.is_authenticated %}
+                        <button class="btn btn-sm {% if attraction.id in saved_attraction_ids %}btn-danger{% else %}btn-outline-danger{% endif %} save-attraction-btn"
+                                data-id="{{ attraction.id }}"
+                                title="{{ '已收藏' if attraction.id in saved_attraction_ids else '收藏' }}">
+                            <i class="{% if attraction.id in saved_attraction_ids %}fas{% else %}far{% endif %} fa-heart"></i>
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- AI推荐景点 -->
+    {% if ai_attractions %}
+    <h4 class="mb-3">
+        <i class="fas fa-robot text-warning me-2"></i>AI推荐景点
+        <span class="badge bg-warning text-dark">{{ ai_attractions|length }}</span>
+    </h4>
+    <div class="row mb-4">
+        {% for attraction in ai_attractions %}
+        <div class="col-md-4 mb-4">
+            <div class="card h-100 shadow-sm border-warning">
+                <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
+                    <span><i class="fas fa-robot me-1"></i>AI推荐</span>
+                    <span class="badge bg-dark">{{ attraction.category or '景点' }}</span>
+                </div>
+                <div class="card-body">
+                    <h5 class="card-title">{{ attraction.name }}</h5>
+                    <p class="card-text text-muted small">
+                        {{ attraction.description[:100] if attraction.description else '暂无描述' }}...
+                    </p>
+
+                    {% if attraction.ticket_price %}
+                    <p class="small mb-1">
+                        <i class="fas fa-ticket-alt text-primary me-1"></i>
+                        <strong>门票：</strong>{{ attraction.ticket_price }}
+                    </p>
+                    {% endif %}
+
+                    {% if attraction.opening_hours %}
+                    <p class="small mb-1">
+                        <i class="fas fa-clock text-info me-1"></i>
+                        <strong>时间：</strong>{{ attraction.opening_hours }}
+                    </p>
+                    {% endif %}
+
+                    {% if attraction.suggested_duration %}
+                    <p class="small mb-1">
+                        <i class="fas fa-hourglass-half text-success me-1"></i>
+                        <strong>建议时长：</strong>{{ attraction.suggested_duration }}分钟
+                    </p>
+                    {% endif %}
+
+                    {% if attraction.play_tips %}
+                    <p class="small text-secondary">
+                        <i class="fas fa-lightbulb text-warning me-1"></i>
+                        {{ attraction.play_tips[:60] }}...
+                    </p>
+                    {% endif %}
+                </div>
+                <div class="card-footer bg-white">
+                    {% if current_user.is_authenticated %}
+                    <button class="btn btn-warning btn-sm w-100"
+                            onclick="addAIToDatabase(this, {{ attraction._ai_data|tojson }})">
+                        <i class="fas fa-plus me-1"></i>添加到数据库
+                    </button>
+                    {% else %}
+                    <a href="{{ url_for('auth.login') }}" class="btn btn-warning btn-sm w-100">
+                        <i class="fas fa-sign-in-alt me-1"></i>登录后添加
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- 无结果 -->
+    {% if not attractions and not ai_attractions %}
+        <div class="alert alert-info text-center py-5">
+            <i class="fas fa-search fa-3x mb-3"></i>
+            <h4>未找到相关景点</h4>
+            <p class="text-muted">请尝试其他关键词或浏览全部景点</p>
+            <a href="{{ url_for('attractions.search') }}" class="btn btn-primary">
+                <i class="fas fa-list me-1"></i>浏览全部景点
+            </a>
+        </div>
+    {% endif %}
+</div>
+
+{% endblock %}
+
+<script>
+// 全局错误捕获
+window.addEventListener('error', function(e) {
+    console.error('页面错误:', e.error);
+    alert('页面错误: ' + e.error.message);
+});
+
+function addAIToDatabase(btn, aiData) {
+    console.log('按钮点击, 数据:', aiData);
+    const originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>添加中...';
+
+    // 确保 aiData 有 name 字段
+    if (!aiData || !aiData.name) {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+        alert('景点数据不完整，缺少名称');
+        return;
+    }
+
+    fetch('{{ url_for("attractions.add_ai_attraction") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+        },
+        body: JSON.stringify(aiData)
+    })
+    .then(response => {
+        console.log('添加响应状态:', response.status);
+        if (!response.ok) {
+            throw new Error('服务器响应错误: ' + response.status);
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('添加景点响应:', data);
+        
+        if (data.success && data.attraction_id) {
+            btn.classList.remove('btn-warning');
+            btn.classList.add('btn-success');
+            btn.innerHTML = '<i class="fas fa-check me-1"></i>已添加';
+            
+            // 添加到收藏
+            return fetch(`/attractions/${data.attraction_id}/save`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                }
+            })
+            .then(res => {
+                console.log('收藏响应状态:', res.status);
+                if (!res.ok) {
+                    throw new Error('收藏请求失败: ' + res.status);
+                }
+                return res.json();
+            })
+            .then(saveData => {
+                console.log('收藏响应:', saveData);
+                showToast('景点已添加并收藏！');
+                setTimeout(() => {
+                    window.location.href = '/attractions/' + data.attraction_id;
+                }, 1500);
+            });
+        } else {
+            throw new Error(data.message || '添加失败');
+        }
+    })
+    .catch(error => {
+        console.error('操作失败:', error);
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+        alert('操作失败: ' + error.message);
+    });
+}
+
+function showToast(message) {
+    const toast = document.createElement('div');
+    toast.className = 'position-fixed bottom-0 end-0 p-3';
+    toast.style.zIndex = '9999';
+    toast.innerHTML = `
+        <div class="toast show align-items-center text-white bg-success border-0" role="alert">
+            <div class="d-flex">
+                <div class="toast-body">
+                    <i class="fas fa-check-circle me-2"></i>${message}
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
+}
+
+// 收藏景点按钮
+document.querySelectorAll('.save-attraction-btn').forEach(btn => {
+    btn.addEventListener('click', async function() {
+        const id = this.dataset.id;
+        try {
+            const response = await fetch(`/attractions/${id}/save`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                }
+            });
+            const data = await response.json();
+            if (data.success) {
+                // 更新按钮状态
+                if (data.saved) {
+                    this.classList.remove('btn-outline-danger');
+                    this.classList.add('btn-danger');
+                    this.querySelector('i').classList.remove('far');
+                    this.querySelector('i').classList.add('fas');
+                    this.title = '已收藏';
+                } else {
+                    this.classList.remove('btn-danger');
+                    this.classList.add('btn-outline-danger');
+                    this.querySelector('i').classList.remove('fas');
+                    this.querySelector('i').classList.add('far');
+                    this.title = '收藏';
+                }
+            } else {
+                alert(data.message || '操作失败');
+            }
+        } catch (e) {
+            alert('操作失败');
+        }
+    });
+});
+</script>

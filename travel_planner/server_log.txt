@@ -1,0 +1,64 @@
+[2026-06-20 16:43:16,982] WARNING in extensions: Redis 连接失败: Error 10061 connecting to localhost:6379. 由于目标计算机积极拒绝，无法连接。.
+[2026-06-20 16:43:17,383] WARNING in pdf_service: WeasyPrint 不可用，PDF 导出功能将被禁用
+Step 1: Setting environment...
+Step 2: Importing create_app...
+Step 3: Creating app...
+Step 4: Checking routes...
+Found 36 routes
+Step 5: Starting server...
+ * Serving Flask app 'app'
+ * Debug mode: on
+WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+ * Running on http://127.0.0.1:5000
+Press CTRL+C to quit
+127.0.0.1 - - [20/Jun/2026 16:43:27] "GET /itineraries/1 HTTP/1.1" 200 -
+127.0.0.1 - - [20/Jun/2026 16:43:49] "GET /itineraries/1 HTTP/1.1" 200 -
+127.0.0.1 - - [20/Jun/2026 16:43:49] "GET /static/css/custom.css HTTP/1.1" 200 -
+127.0.0.1 - - [20/Jun/2026 16:43:49] "GET /hybridaction/zybTrackerStatisticsAction?data={}&__callback__=__cb__zybTrackerStatisticsAction__779f0e1a_53de_4361_a552_e6e3aecd0eb7__0 HTTP/1.1" 404 -
+127.0.0.1 - - [20/Jun/2026 16:43:49] "GET /hybridaction/zybTrackerStatisticsAction?data={}&__callback__=__cb__zybTrackerStatisticsAction__3d290de6_ff46_4a0a_af31_89eb105b8975__1 HTTP/1.1" 404 -
+127.0.0.1 - - [20/Jun/2026 16:44:09] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [20/Jun/2026 16:44:09] "GET /hybridaction/zybTrackerStatisticsAction?data={}&__callback__=__cb__zybTrackerStatisticsAction__ebdb1873_c2c5_4573_8dbf_47c3cedb3278__0 HTTP/1.1" 404 -
+127.0.0.1 - - [20/Jun/2026 16:44:09] "GET /hybridaction/zybTrackerStatisticsAction?data={}&__callback__=__cb__zybTrackerStatisticsAction__20f96fba_c73f_4e50_a11f_41f8d266dfd8__1 HTTP/1.1" 404 -
+127.0.0.1 - - [20/Jun/2026 16:44:28] "GET /auth/profile HTTP/1.1" 200 -
+127.0.0.1 - - [20/Jun/2026 16:44:28] "GET /hybridaction/zybTrackerStatisticsAction?data={}&__callback__=__cb__zybTrackerStatisticsAction__929e11e2_e78d_496a_a64d_f0f94b32e5f9__0 HTTP/1.1" 404 -
+127.0.0.1 - - [20/Jun/2026 16:44:28] "GET /hybridaction/zybTrackerStatisticsAction?data={}&__callback__=__cb__zybTrackerStatisticsAction__c0cfec5f_045a_4ff8_a3cb_9b45df463456__1 HTTP/1.1" 404 -
+127.0.0.1 - - [20/Jun/2026 16:44:34] "GET /hybridaction/zybTrackerStatisticsAction?data={}&__callback__=__cb__zybTrackerStatisticsAction__c1b51989_3a05_4732_a2fc_fbe4819b258b__0 HTTP/1.1" 404 -
+127.0.0.1 - - [20/Jun/2026 16:44:34] "GET /hybridaction/zybTrackerStatisticsAction?data={}&__callback__=__cb__zybTrackerStatisticsAction__f52a64b5_7e45_4c0d_8e9d_739f986e5042__1 HTTP/1.1" 404 -
+127.0.0.1 - - [20/Jun/2026 16:44:35] "GET /community/ HTTP/1.1" 200 -
+127.0.0.1 - - [20/Jun/2026 16:44:35] "GET /static/css/custom.css HTTP/1.1" 304 -
+127.0.0.1 - - [20/Jun/2026 16:44:35] "GET /hybridaction/zybTrackerStatisticsAction?data={}&__callback__=__cb__zybTrackerStatisticsAction__b6bedbc4_7ff9_4a41_865b_13e9502eec48__0 HTTP/1.1" 404 -
+127.0.0.1 - - [20/Jun/2026 16:44:35] "GET /hybridaction/zybTrackerStatisticsAction?data={}&__callback__=__cb__zybTrackerStatisticsAction__2b16b81e_5764_4020_8a6e_e7faceb86989__1 HTTP/1.1" 404 -
+127.0.0.1 - - [20/Jun/2026 16:44:36] "GET /destinations/ HTTP/1.1" 200 -
+127.0.0.1 - - [20/Jun/2026 16:44:36] "GET /static/css/custom.css HTTP/1.1" 304 -
+127.0.0.1 - - [20/Jun/2026 16:44:36] "GET /hybridaction/zybTrackerStatisticsAction?data={}&__callback__=__cb__zybTrackerStatisticsAction__c8de4e18_ad50_4478_9eb9_19ee9d0f4396__0 HTTP/1.1" 404 -
+127.0.0.1 - - [20/Jun/2026 16:44:36] "GET /hybridaction/zybTrackerStatisticsAction?data={}&__callback__=__cb__zybTrackerStatisticsAction__8c10fe55_c745_4d25_87e3_aeeb8d82f0c7__1 HTTP/1.1" 404 -
+127.0.0.1 - - [20/Jun/2026 16:44:40] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [20/Jun/2026 16:44:40] "GET /static/css/custom.css HTTP/1.1" 304 -
+127.0.0.1 - - [20/Jun/2026 16:44:40] "GET /hybridaction/zybTrackerStatisticsAction?data={}&__callback__=__cb__zybTrackerStatisticsAction__fabf2c63_cd16_440f_bee7_1ab899a91340__0 HTTP/1.1" 404 -
+127.0.0.1 - - [20/Jun/2026 16:44:40] "GET /hybridaction/zybTrackerStatisticsAction?data={}&__callback__=__cb__zybTrackerStatisticsAction__f92417d8_f6f3_4bd3_a1a6_3190c44c7625__1 HTTP/1.1" 404 -
+127.0.0.1 - - [20/Jun/2026 16:45:52] "GET /auth/user/testuser5 HTTP/1.1" 200 -
+127.0.0.1 - - [20/Jun/2026 16:46:08] "POST /auth/login HTTP/1.1" 400 -
+127.0.0.1 - - [20/Jun/2026 16:47:15] "GET /auth/user/testuser5 HTTP/1.1" 200 -
+127.0.0.1 - - [20/Jun/2026 16:48:09] "GET /auth/profile HTTP/1.1" 200 -
+127.0.0.1 - - [20/Jun/2026 16:48:09] "GET /hybridaction/zybTrackerStatisticsAction?data={}&__callback__=__cb__zybTrackerStatisticsAction__39fde0ea_051d_4476_a5f8_5816ef5f4643__0 HTTP/1.1" 404 -
+127.0.0.1 - - [20/Jun/2026 16:48:09] "GET /hybridaction/zybTrackerStatisticsAction?data={}&__callback__=__cb__zybTrackerStatisticsAction__83a0da3a_849b_4bdf_a4a2_0acb52728a14__1 HTTP/1.1" 404 -
+127.0.0.1 - - [20/Jun/2026 16:48:15] "GET /auth/profile HTTP/1.1" 200 -
+127.0.0.1 - - [20/Jun/2026 16:48:15] "GET /hybridaction/zybTrackerStatisticsAction?data={}&__callback__=__cb__zybTrackerStatisticsAction__22748f42_2de3_4e7f_bd0f_5569d557f944__0 HTTP/1.1" 404 -
+127.0.0.1 - - [20/Jun/2026 16:48:15] "GET /hybridaction/zybTrackerStatisticsAction?data={}&__callback__=__cb__zybTrackerStatisticsAction__7064ff53_b916_4a4f_85ae_398b217338f2__1 HTTP/1.1" 404 -
+127.0.0.1 - - [20/Jun/2026 16:48:16] "GET /auth/profile HTTP/1.1" 200 -
+127.0.0.1 - - [20/Jun/2026 16:48:16] "GET /hybridaction/zybTrackerStatisticsAction?data={}&__callback__=__cb__zybTrackerStatisticsAction__71e89143_e0dc_4e24_8bb7_49a90e088473__0 HTTP/1.1" 404 -
+127.0.0.1 - - [20/Jun/2026 16:48:16] "GET /hybridaction/zybTrackerStatisticsAction?data={}&__callback__=__cb__zybTrackerStatisticsAction__28758085_b94e_47db_a775_4094f3f22dfc__1 HTTP/1.1" 404 -
+127.0.0.1 - - [20/Jun/2026 16:48:27] "GET /hybridaction/zybTrackerStatisticsAction?data={}&__callback__=__cb__zybTrackerStatisticsAction__de47b227_ae33_45be_b866_696587c2af0f__0 HTTP/1.1" 404 -
+127.0.0.1 - - [20/Jun/2026 16:48:27] "GET /hybridaction/zybTrackerStatisticsAction?data={}&__callback__=__cb__zybTrackerStatisticsAction__feae6119_63a6_44c7_9ff5_dddc78c1f0be__1 HTTP/1.1" 404 -
+127.0.0.1 - - [20/Jun/2026 16:48:28] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [20/Jun/2026 16:48:28] "GET /static/css/custom.css HTTP/1.1" 304 -
+127.0.0.1 - - [20/Jun/2026 16:48:28] "GET /hybridaction/zybTrackerStatisticsAction?data={}&__callback__=__cb__zybTrackerStatisticsAction__a52540fa_33f8_44c5_857c_a43f900a5ed5__0 HTTP/1.1" 404 -
+127.0.0.1 - - [20/Jun/2026 16:48:28] "GET /hybridaction/zybTrackerStatisticsAction?data={}&__callback__=__cb__zybTrackerStatisticsAction__8cb26088_4a8f_41d8_a628_eb2df5d246d1__1 HTTP/1.1" 404 -
+127.0.0.1 - - [20/Jun/2026 16:48:31] "GET /auth/profile HTTP/1.1" 200 -
+127.0.0.1 - - [20/Jun/2026 16:48:31] "GET /hybridaction/zybTrackerStatisticsAction?data={}&__callback__=__cb__zybTrackerStatisticsAction__4918c8ae_d9e8_4e76_bc11_698456131fd4__0 HTTP/1.1" 404 -
+127.0.0.1 - - [20/Jun/2026 16:48:31] "GET /hybridaction/zybTrackerStatisticsAction?data={}&__callback__=__cb__zybTrackerStatisticsAction__4560a032_f7b8_4934_a56e_5b4f10babd1a__1 HTTP/1.1" 404 -
+127.0.0.1 - - [20/Jun/2026 16:50:16] "GET /auth/profile HTTP/1.1" 302 -
+127.0.0.1 - - [20/Jun/2026 16:50:16] "GET /auth/login?next=/auth/profile HTTP/1.1" 200 -
+127.0.0.1 - - [20/Jun/2026 16:50:35] "POST /auth/login HTTP/1.1" 400 -
+127.0.0.1 - - [20/Jun/2026 16:53:52] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [20/Jun/2026 17:03:22] "POST /auth/login HTTP/1.1" 400 -

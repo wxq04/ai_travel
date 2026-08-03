@@ -1,0 +1,773 @@
+{% extends "base.html" %}
+
+{% block title %}{{ itinerary.title }} - AI 旅游行程规划助手{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- 页面标题 -->
+    <div class="row mb-4">
+        <div class="col-lg-8">
+            <h1 class="mb-2">
+                <i class="fas fa-route text-primary me-2"></i>{{ itinerary.title }}
+            </h1>
+            <div class="mb-2">
+                <span class="badge bg-primary me-2">{{ itinerary.destination.name }}</span>
+                <span class="badge bg-secondary me-2">{{ itinerary.days_count }} 天</span>
+                <span class="badge bg-success me-2">{{ itinerary.budget_level }}</span>
+                {% if itinerary.is_public %}
+                <span class="badge bg-info">已公开</span>
+                {% else %}
+                <span class="badge bg-warning">私人行程</span>
+                {% endif %}
+            </div>
+            <div class="text-muted">
+                <i class="fas fa-user me-1"></i>
+                <a href="#" class="text-decoration-none">{{ itinerary.author.username }}</a>
+                <span class="mx-2">|</span>
+                <i class="fas fa-calendar me-1"></i>{{ itinerary.created_at.strftime('%Y-%m-%d') }}
+            </div>
+        </div>
+        <div class="col-lg-4 text-end">
+            <div class="btn-group" role="group">
+                <button class="btn btn-outline-danger" id="likeBtn" onclick="toggleLike()">
+                    <i class="fas fa-heart me-1"></i>
+                    <span id="likeCount">{{ itinerary.like_count }}</span>
+                </button>
+                <button class="btn btn-outline-warning" id="favoriteBtn" onclick="toggleFavorite()">
+                    <i class="fas fa-star me-1"></i>收藏
+                </button>
+                <button class="btn btn-outline-primary" onclick="copyItinerary()">
+                    <i class="fas fa-copy me-1"></i>复制
+                </button>
+                {% if current_user.is_authenticated and current_user.id == itinerary.user_id %}
+                <button class="btn btn-outline-success" onclick="showAIDialog()">
+                    <i class="fas fa-robot me-1"></i>AI调整
+                </button>
+                <button class="btn btn-outline-danger" onclick="deleteItinerary()">
+                    <i class="fas fa-trash me-1"></i>删除
+                </button>
+                {% endif %}
+                <button class="btn btn-primary" onclick="exportPDF()">
+                    <i class="fas fa-file-pdf me-1"></i>导出 PDF
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- 左侧：时间轴展示 -->
+        <div class="col-lg-8">
+            <!-- 时间轴 -->
+            <div class="timeline-container">
+                {% for day in itinerary.days %}
+                <div class="timeline-item">
+                    <div class="timeline-marker"></div>
+                    <div class="timeline-content">
+                        <div class="card shadow-sm mb-3">
+                            <div class="card-header bg-primary text-white">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-calendar-day me-2"></i>
+                                    第 {{ loop.index }} 天
+                                    {% if day.theme %}
+                                    <span class="badge bg-light text-dark ms-2">{{ day.theme }}</span>
+                                    {% endif %}
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                {% for activity in day.activities %}
+                                <div class="activity-item mb-3 {% if not loop.last %}border-bottom pb-3{% endif %}">
+                                    <div class="row">
+                                        <div class="col-1">
+                                            {% if activity.activity_type == '景点' %}
+                                            <i class="fas fa-camera text-primary fa-lg"></i>
+                                            {% elif activity.activity_type == '美食' %}
+                                            <i class="fas fa-utensils text-warning fa-lg"></i>
+                                            {% elif activity.activity_type == '住宿' %}
+                                            <i class="fas fa-bed text-secondary fa-lg"></i>
+                                            {% elif activity.activity_type == '交通' %}
+                                            <i class="fas fa-car text-success fa-lg"></i>
+                                            {% elif activity.activity_type == '购物' %}
+                                            <i class="fas fa-shopping-bag text-danger fa-lg"></i>
+                                            {% else %}
+                                            <i class="fas fa-circle text-muted fa-lg"></i>
+                                            {% endif %}
+                                        </div>
+                                        <div class="col-8">
+                                            <h6 class="mb-1">{{ activity.name }}</h6>
+                                            <p class="text-muted small mb-1">
+                                                <i class="fas fa-clock me-1"></i>{{ activity.duration_minutes }}分钟
+                                                <span class="mx-2">|</span>
+                                                <i class="fas fa-wallet me-1"></i>¥{{ activity.estimated_cost or 0 }}
+                                            </p>
+                                            {% if activity.tip %}
+                                            <p class="text-muted small mb-0">
+                                                <i class="fas fa-lightbulb text-warning me-1"></i>
+                                                {{ activity.tip }}
+                                            </p>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                {% else %}
+                                <p class="text-muted text-center py-3">暂无活动安排</p>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- 评论区 -->
+            <div class="card shadow-sm mt-4">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">
+                        <i class="fas fa-comments text-info me-2"></i>评论
+                        <span class="badge bg-secondary ms-2">{{ comments|length }}</span>
+                    </h5>
+
+                    <!-- 发表评论 -->
+                    {% if current_user.is_authenticated %}
+                    <form method="POST" action="{{ url_for('itineraries.add_comment', id=itinerary.id) }}"
+                          class="mb-4">
+                        <div class="mb-3">
+                            <textarea name="content" class="form-control" rows="3"
+                                      placeholder="发表你的评论..."></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-paper-plane me-1"></i>发表评论
+                        </button>
+                    </form>
+                    {% else %}
+                    <div class="alert alert-info mb-4">
+                        <i class="fas fa-info-circle me-2"></i>
+                        请 <a href="{{ url_for('auth.login') }}">登录</a> 后发表评论
+                    </div>
+                    {% endif %}
+
+                    <!-- 评论列表 -->
+                    <div class="comments-list">
+                        {% for comment in comments %}
+                        <div class="comment-item mb-3" id="comment{{ comment.id }}">
+                            <div class="d-flex">
+                                <div class="rounded-circle me-3 bg-primary text-white d-flex align-items-center justify-content-center"
+                                     style="width: 48px; height: 48px;">
+                                    <i class="fas fa-user"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <div class="d-flex justify-content-between">
+                                        <h6 class="mb-1">{{ comment.user.username }}</h6>
+                                        <small class="text-muted">{{ comment.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                                    </div>
+                                    <p class="mb-2">{{ comment.content }}</p>
+                                    {% if current_user.is_authenticated %}
+                                    <button class="btn btn-sm btn-outline-secondary"
+                                            onclick="replyComment({{ comment.id }})">
+                                        <i class="fas fa-reply me-1"></i>回复
+                                    </button>
+                                    {% endif %}
+
+                                    <!-- 回复列表 -->
+                                    {% if comment.replies %}
+                                    <div class="replies-list mt-3 ms-4">
+                                        {% for reply in comment.replies %}
+                                        <div class="reply-item mb-2" id="reply{{ reply.id }}">
+                                            <div class="d-flex">
+                                                <div class="rounded-circle me-2 bg-primary text-white d-flex align-items-center justify-content-center"
+                                                     style="width: 36px; height: 36px;">
+                                                    <i class="fas fa-user"></i>
+                                                </div>
+                                                <div class="flex-grow-1">
+                                                    <div class="d-flex justify-content-between">
+                                                        <small class="fw-bold">{{ reply.user.username }}</small>
+                                                        <small class="text-muted">{{ reply.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                                                    </div>
+                                                    <p class="mb-1 small">{{ reply.content }}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% else %}
+                        <p class="text-muted text-center py-3">暂无评论，快来抢沙发！</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 右侧：费用汇总和作者信息 -->
+        <div class="col-lg-4">
+            <!-- 地图展示 -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">
+                        <i class="fas fa-map-marked-alt text-success me-2"></i>行程地图
+                    </h5>
+                    <div id="itineraryMap" style="height: 300px; border-radius: 8px;"></div>
+                    <div class="mt-3">
+                        <small class="text-muted">
+                            <i class="fas fa-info-circle me-1"></i>地图显示行程中各景点位置
+                        </small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 费用饼图 -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">
+                        <i class="fas fa-chart-pie text-info me-2"></i>费用汇总
+                    </h5>
+                    <canvas id="costChart" height="200"></canvas>
+                    <div class="mt-3">
+                        <table class="table table-sm">
+                            <tbody>
+                                <tr>
+                                    <td><i class="fas fa-camera text-primary me-2"></i>景点</td>
+                                    <td class="text-end">¥{{ cost_breakdown.attractions or 0 }}</td>
+                                </tr>
+                                <tr>
+                                    <td><i class="fas fa-utensils text-warning me-2"></i>美食</td>
+                                    <td class="text-end">¥{{ cost_breakdown.food or 0 }}</td>
+                                </tr>
+                                <tr>
+                                    <td><i class="fas fa-bed text-secondary me-2"></i>住宿</td>
+                                    <td class="text-end">¥{{ cost_breakdown.accommodation or 0 }}</td>
+                                </tr>
+                                <tr>
+                                    <td><i class="fas fa-car text-success me-2"></i>交通</td>
+                                    <td class="text-end">¥{{ cost_breakdown.transport or 0 }}</td>
+                                </tr>
+                                <tr>
+                                    <td><i class="fas fa-shopping-bag text-danger me-2"></i>购物</td>
+                                    <td class="text-end">¥{{ cost_breakdown.shopping or 0 }}</td>
+                                </tr>
+                                <tr class="table-primary">
+                                    <td><strong>合计</strong></td>
+                                    <td class="text-end"><strong>¥{{ cost_breakdown.total or 0 }}</strong></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 作者信息 -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">
+                        <i class="fas fa-user me-2"></i>作者信息
+                    </h5>
+                    <div class="text-center">
+                        <div class="rounded-circle mb-3 bg-primary text-white d-flex align-items-center justify-content-center"
+                             style="width: 80px; height: 80px; margin: 0 auto;">
+                            <i class="fas fa-user fa-3x"></i>
+                        </div>
+                        <h5>{{ itinerary.author.username }}</h5>
+                        <p class="text-muted small">
+                            {% if itinerary.author.bio %}
+                            {{ itinerary.author.bio }}
+                            {% else %}
+                            暂无个人简介
+                            {% endif %}
+                        </p>
+                        <a href="{{ url_for('auth.user_profile', username=itinerary.author.username) }}"
+                           class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-user me-1"></i>查看主页
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 相关推荐 -->
+            {% if related_itineraries %}
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">
+                        <i class="fas fa-fire text-danger me-2"></i>相关推荐
+                    </h5>
+                    {% for related in related_itineraries %}
+                    <a href="{{ url_for('itineraries.detail', id=related.id) }}"
+                       class="text-decoration-none mb-2 d-block">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-route me-2 text-primary"></i>
+                            <div>
+                                <div class="small fw-bold">{{ related.title }}</div>
+                                <div class="text-muted small">
+                                    {{ related.days_count }}天 · {{ related.author.username }}
+                                </div>
+                            </div>
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- AI调整对话框 -->
+<div class="modal fade" id="aiAdjustModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-robot me-2"></i>AI 行程调整助手
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <!-- 对话历史 -->
+                <div id="chatHistory" class="mb-3" style="max-height: 300px; overflow-y: auto;">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>您好！我是AI行程调整助手。请告诉我您想如何调整行程，例如：
+                        <ul class="mb-0 mt-2">
+                            <li>"第二天不想去爬山"</li>
+                            <li>"增加更多美食体验"</li>
+                            <li>"第三天改成购物为主"</li>
+                            <li>"预算太高了，帮我降低"</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <!-- 输入框 -->
+                <div class="input-group">
+                    <input type="text" id="aiInput" class="form-control" 
+                           placeholder="输入您的调整需求..." 
+                           onkeypress="if(event.key==='Enter') sendAIMessage()">
+                    <button class="btn btn-success" onclick="sendAIMessage()">
+                        <i class="fas fa-paper-plane me-1"></i>发送
+                    </button>
+                </div>
+                
+                <!-- 调整状态 -->
+                <div id="adjustStatus" class="mt-3" style="display: none;">
+                    <div class="progress">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated bg-success" 
+                             style="width: 100%"></div>
+                    </div>
+                    <small class="text-muted mt-2">
+                        <i class="fas fa-spinner fa-spin me-1"></i>AI正在重新规划行程...
+                    </small>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-success" id="applyChangesBtn" onclick="applyChanges()" disabled>
+                    <i class="fas fa-check me-1"></i>应用更改
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // 页面加载完成后初始化
+    document.addEventListener('DOMContentLoaded', function() {
+        initCostChart();
+        initMap();
+    });
+
+    // 初始化地图 - 使用简单的替代方案，避免API Key问题
+    function initMap() {
+        try {
+            var mapContainer = document.getElementById('itineraryMap');
+            if (!mapContainer) return;
+            
+            // 检查高德地图API是否可用
+            if (typeof AMap !== 'undefined') {
+                // 创建地图实例
+                var map = new AMap.Map('itineraryMap', {
+                    zoom: 11,
+                    center: [121.4737, 31.2304], // 上海坐标
+                    mapStyle: 'amap/styles/normal'
+                });
+
+                // 添加标记点
+                var markers = [];
+                var locations = [
+                    {% for day in itinerary.days %}
+                    {% for activity in day.activities %}
+                    {
+                        name: '{{ activity.name }}',
+                        type: '{{ activity.activity_type }}',
+                        day: {{ day.day_number }},
+                        {% if activity.name == '外滩' %}
+                        position: [121.4903, 31.2400]
+                        {% elif activity.name == '东方明珠塔' %}
+                        position: [121.4995, 31.2397]
+                        {% elif activity.name == '豫园' %}
+                        position: [121.4925, 31.2270]
+                        {% elif activity.name == '陆家嘴' %}
+                        position: [121.5055, 31.2340]
+                        {% elif activity.name == '田子坊' %}
+                        position: [121.4687, 31.2117]
+                        {% elif activity.name == '上海博物馆' %}
+                        position: [121.4737, 31.2280]
+                        {% elif activity.name == '思南公馆' %}
+                        position: [121.4700, 31.2180]
+                        {% elif activity.name == '南京路步行街' %}
+                        position: [121.4800, 31.2350]
+                        {% elif activity.name == '上海迪士尼' %}
+                        position: [121.6540, 31.1430]
+                        {% else %}
+                        position: [121.4737, 31.2304]
+                        {% endif %}
+                    },
+                    {% endfor %}
+                    {% endfor %}
+                ];
+
+                // 创建标记
+                locations.forEach(function(loc, index) {
+                    var marker = new AMap.Marker({
+                        position: loc.position,
+                        title: loc.name,
+                        content: '<div class="map-marker"><span class="badge bg-primary">' + loc.day + '</span></div>'
+                    });
+                    marker.setMap(map);
+                    markers.push(marker);
+
+                    // 点击显示信息
+                    marker.on('click', function() {
+                        var infoWindow = new AMap.InfoWindow({
+                            content: '<div class="p-2"><strong>' + loc.name + '</strong><br><small>' + loc.type + '</small></div>',
+                            offset: new AMap.Pixel(0, -30)
+                        });
+                        infoWindow.open(map, marker.getPosition());
+                    });
+                });
+
+                // 自动调整视野
+                map.setFitView(markers);
+
+                // 添加路线
+                if (locations.length > 1) {
+                    var path = locations.map(function(loc) { return loc.position; });
+                    var polyline = new AMap.Polyline({
+                        path: path,
+                        strokeColor: '#3366FF',
+                        strokeWeight: 4,
+                        strokeOpacity: 0.8
+                    });
+                    polyline.setMap(map);
+                }
+            } else {
+                // 如果地图API不可用，显示静态地图
+                mapContainer.innerHTML = '<div class="text-center py-5 text-muted"><i class="fas fa-map fa-3x mb-3"></i><br>地图服务不可用</div>';
+            }
+        } catch(e) {
+            // 如果地图初始化失败，显示提示
+            var mapContainer = document.getElementById('itineraryMap');
+            if (mapContainer) {
+                mapContainer.innerHTML = '<div class="text-center py-5 text-muted"><i class="fas fa-map fa-3x mb-3"></i><br>地图加载失败</div>';
+            }
+        }
+    }
+
+    function initCostChart() {
+        const ctx = document.getElementById('costChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: ['景点', '美食', '住宿', '交通', '购物'],
+                datasets: [{
+                    data: [
+                        {{ cost_breakdown.attractions or 0 }},
+                        {{ cost_breakdown.food or 0 }},
+                        {{ cost_breakdown.accommodation or 0 }},
+                        {{ cost_breakdown.transport or 0 }},
+                        {{ cost_breakdown.shopping or 0 }}
+                    ],
+                    backgroundColor: [
+                        '#0d6efd',
+                        '#ffc107',
+                        '#6c757d',
+                        '#198754',
+                        '#dc3545'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    }
+
+    // 点赞
+    function toggleLike() {
+        fetch('{{ url_for("itineraries.toggle_like", id=itinerary.id) }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('likeCount').textContent = data.like_count;
+            const btn = document.getElementById('likeBtn');
+            if (data.liked) {
+                btn.classList.remove('btn-outline-danger');
+                btn.classList.add('btn-danger');
+            } else {
+                btn.classList.remove('btn-danger');
+                btn.classList.add('btn-outline-danger');
+            }
+        });
+    }
+
+    // 收藏
+    function toggleFavorite() {
+        fetch('{{ url_for("itineraries.toggle_favorite", id=itinerary.id) }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            const btn = document.getElementById('favoriteBtn');
+            if (data.favorited) {
+                btn.classList.remove('btn-outline-warning');
+                btn.classList.add('btn-warning');
+            } else {
+                btn.classList.remove('btn-warning');
+                btn.classList.add('btn-outline-warning');
+            }
+        });
+    }
+
+    // 复制行程
+    function copyItinerary() {
+        {% if current_user.is_authenticated %}
+        fetch('{{ url_for("itineraries.clone", id=itinerary.id) }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('HTTP error ' + response.status);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                alert(data.message || '行程已复制到您的账户！');
+                window.location.href = data.redirect_url;
+            } else {
+                alert(data.message || '复制失败');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('复制失败，请重试');
+        });
+        {% else %}
+        alert('请先登录后再复制行程');
+        window.location.href = '{{ url_for("auth.login") }}';
+        {% endif %}
+    }
+
+    // 删除行程
+    function deleteItinerary() {
+        if (!confirm('确定删除此行程？此操作无法撤销！')) {
+            return;
+        }
+        
+        fetch('{{ url_for("itineraries.delete", id=itinerary.id) }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('HTTP error ' + response.status);
+            }
+            return response.redirected ? response.url : response.json();
+        })
+        .then(data => {
+            if (typeof data === 'object' && data.success === false) {
+                alert(data.message || '删除失败');
+            } else {
+                alert('行程已删除');
+                window.location.href = '{{ url_for("itineraries.my_itineraries") }}';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('删除失败，请重试');
+        });
+    }
+
+    // 导出 PDF
+    function exportPDF() {
+        // 使用浏览器打印功能
+        window.print();
+    }
+
+    // 回复评论
+    function replyComment(commentId) {
+        const content = prompt('请输入回复内容：');
+        if (content) {
+            fetch('{{ url_for("itineraries.add_comment", id=itinerary.id) }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    content: content,
+                    parent_id: commentId
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert(data.message || '回复失败');
+                }
+            });
+        }
+    }
+
+    // AI调整相关变量
+    var proposedChanges = null;
+    var chatMessages = [];
+
+    // 显示AI调整对话框
+    function showAIDialog() {
+        var modal = new bootstrap.Modal(document.getElementById('aiAdjustModal'));
+        modal.show();
+    }
+
+    // 发送AI消息
+    function sendAIMessage() {
+        var input = document.getElementById('aiInput');
+        var message = input.value.trim();
+        if (!message) return;
+
+        // 添加用户消息到对话历史
+        addChatMessage('user', message);
+        input.value = '';
+
+        // 显示调整状态
+        document.getElementById('adjustStatus').style.display = 'block';
+
+        // 发送到后端处理
+        fetch('{{ url_for("itineraries.ai_adjust", id=itinerary.id) }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                message: message,
+                history: chatMessages
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('adjustStatus').style.display = 'none';
+            
+            if (data.success) {
+                // 添加AI回复
+                addChatMessage('ai', data.response);
+                
+                // 保存提议的更改
+                if (data.changes) {
+                    proposedChanges = data.changes;
+                    document.getElementById('applyChangesBtn').disabled = false;
+                    
+                    // 显示更改预览
+                    if (data.preview) {
+                        addChatMessage('preview', data.preview);
+                    }
+                }
+            } else {
+                addChatMessage('error', data.message || '处理失败，请重试');
+            }
+        })
+        .catch(error => {
+            document.getElementById('adjustStatus').style.display = 'none';
+            addChatMessage('error', '网络错误，请重试');
+        });
+    }
+
+    // 添加聊天消息
+    function addChatMessage(type, content) {
+        var history = document.getElementById('chatHistory');
+        var msgDiv = document.createElement('div');
+        
+        if (type === 'user') {
+            msgDiv.className = 'alert alert-primary mb-2';
+            msgDiv.innerHTML = '<i class="fas fa-user me-2"></i><strong>您：</strong>' + content;
+            chatMessages.push({role: 'user', content: content});
+        } else if (type === 'ai') {
+            msgDiv.className = 'alert alert-success mb-2';
+            msgDiv.innerHTML = '<i class="fas fa-robot me-2"></i><strong>AI：</strong>' + content;
+            chatMessages.push({role: 'ai', content: content});
+        } else if (type === 'preview') {
+            msgDiv.className = 'alert alert-warning mb-2';
+            msgDiv.innerHTML = '<i class="fas fa-eye me-2"></i><strong>更改预览：</strong><br>' + content;
+        } else {
+            msgDiv.className = 'alert alert-danger mb-2';
+            msgDiv.innerHTML = '<i class="fas fa-exclamation-circle me-2"></i>' + content;
+        }
+        
+        history.appendChild(msgDiv);
+        history.scrollTop = history.scrollHeight;
+    }
+
+    // 应用更改
+    function applyChanges() {
+        if (!proposedChanges) return;
+        
+        document.getElementById('adjustStatus').style.display = 'block';
+        
+        fetch('{{ url_for("itineraries.apply_ai_changes", id=itinerary.id) }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                changes: proposedChanges
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('adjustStatus').style.display = 'none';
+            
+            if (data.success) {
+                addChatMessage('ai', '更改已应用！页面即将刷新...');
+                setTimeout(function() {
+                    location.reload();
+                }, 1500);
+            } else {
+                addChatMessage('error', data.message || '应用失败');
+            }
+        })
+        .catch(error => {
+            document.getElementById('adjustStatus').style.display = 'none';
+            addChatMessage('error', '网络错误');
+        });
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+
+{% block title %}目的地列表 - AI 旅游行程规划助手{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- 页面标题 -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="page-title">
+                <i class="fas fa-globe-americas me-2"></i>探索目的地
+            </h1>
+        </div>
+    </div>
+
+    <!-- 搜索和筛选 -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <!-- 搜索框 -->
+            <form method="GET" action="{{ url_for('destinations.list') }}" class="d-flex">
+                <input type="text" class="form-control me-2" name="search"
+                       placeholder="搜索目的地..." value="{{ search or '' }}">
+                <input type="hidden" name="category" value="{{ current_category or '' }}">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-search"></i>
+                </button>
+            </form>
+        </div>
+        <div class="col-md-4 text-end">
+            <span class="text-muted">{{ destinations|length }} 个目的地</span>
+        </div>
+    </div>
+
+    <!-- 分类筛选标签栏 -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="category-filter">
+                <a href="{{ url_for('destinations.list', search=search or '') }}"
+                   class="btn {% if not current_category %}btn-primary{% else %}btn-outline-primary{% endif %} me-2 mb-2">
+                    <i class="fas fa-th-large me-1"></i>全部
+                </a>
+                {% for cat in ['自然', '历史', '美食', '都市', '海滨'] %}
+                <a href="{{ url_for('destinations.list', category=cat, search=search or '') }}"
+                   class="btn {% if current_category == cat %}btn-primary{% else %}btn-outline-primary{% endif %} me-2 mb-2">
+                    {% if cat == '自然' %}<i class="fas fa-tree me-1"></i>
+                    {% elif cat == '历史' %}<i class="fas fa-landmark me-1"></i>
+                    {% elif cat == '美食' %}<i class="fas fa-utensils me-1"></i>
+                    {% elif cat == '都市' %}<i class="fas fa-city me-1"></i>
+                    {% elif cat == '海滨' %}<i class="fas fa-umbrella-beach me-1"></i>
+                    {% endif %}
+                    {{ cat }}
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- 目的地网格 -->
+    <div class="row">
+        {% for destination in destinations %}
+        <div class="col-lg-4 col-md-6 mb-4">
+            <a href="{{ url_for('destinations.detail', id=destination.id) }}"
+               class="destination-card text-decoration-none">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-header bg-primary text-white d-flex align-items-center justify-content-center"
+                         style="height: 100px;">
+                        <div class="text-center">
+                            <i class="fas fa-map-marker-alt fa-3x mb-2"></i>
+                            <h4 class="card-title">{{ destination.name }}</h4>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <span class="badge bg-primary">{{ destination.category }}</span>
+                        </div>
+                        <p class="card-text text-muted small mb-2">
+                            <i class="fas fa-map-marker-alt me-1"></i>
+                            {{ destination.province or '' }} {{ destination.city }}
+                        </p>
+                        <p class="card-text text-muted small mb-3">
+                            {{ destination.description[:80] }}{% if destination.description|length > 80 %}...{% endif %}
+                        </p>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="rating">
+                                <span class="text-warning">
+                                    {% for i in range(5) %}
+                                    <i class="fas fa-star{% if i >= destination.avg_rating|int %} text-muted{% endif %}"></i>
+                                    {% endfor %}
+                                </span>
+                                <span class="text-muted ms-1 small">
+                                    {{ "%.1f"|format(destination.avg_rating) }}
+                                </span>
+                            </div>
+                            <div class="text-muted small">
+                                <i class="fas fa-eye me-1"></i>{{ destination.view_count }}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-white border-0">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="badge bg-secondary">
+                                <i class="fas fa-calendar-alt me-1"></i>{{ destination.best_season or '四季皆宜' }}
+                            </span>
+                            <span class="text-primary">
+                                查看详情 <i class="fas fa-arrow-right ms-1"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+        {% else %}
+        <div class="col-12 text-center py-5">
+            <div class="empty-state">
+                <i class="fas fa-search fa-4x text-muted mb-3"></i>
+                <h4 class="text-muted">没有找到匹配的目的地</h4>
+                <p class="text-muted">请尝试其他关键词或筛选条件</p>
+                <a href="{{ url_for('destinations.list') }}" class="btn btn-primary">
+                    <i class="fas fa-redo me-1"></i>重置筛选
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- 分页 -->
+    {% if pagination.pages > 1 %}
+    <div class="row mt-4">
+        <div class="col-12 d-flex justify-content-center">
+            <nav>
+                <ul class="pagination">
+                    {% if pagination.has_prev %}
+                    <li class="page-item">
+                        <a class="page-link"
+                           href="{{ url_for('destinations.list', page=pagination.prev_num, category=current_category or '', search=search or '') }}">
+                            上一页
+                        </a>
+                    </li>
+                    {% endif %}
+
+                    {% for p in range(1, pagination.pages + 1) %}
+                    {% if p == 1 or p == pagination.pages or (p >= page - 1 and p <= page + 1) %}
+                    <li class="page-item {% if p == page %}active{% endif %}">
+                        <a class="page-link"
+                           href="{{ url_for('destinations.list', page=p, category=current_category or '', search=search or '') }}">
+                            {{ p }}
+                        </a>
+                    </li>
+                    {% elif p == page - 2 or p == page + 2 %}
+                    <li class="page-item disabled">
+                        <span class="page-link">...</span>
+                    </li>
+                    {% endif %}
+                    {% endfor %}
+
+                    {% if pagination.has_next %}
+                    <li class="page-item">
+                        <a class="page-link"
+                           href="{{ url_for('destinations.list', page=pagination.next_num, category=current_category or '', search=search or '') }}">
+                            下一页
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
